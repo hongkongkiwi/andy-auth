@@ -1,0 +1,1 @@
+export { FavoriteClients } from './components/FavoriteClients';
