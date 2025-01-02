@@ -1,40 +1,20 @@
-import { auth } from '@/auth';
-import { Providers } from '@/components/layout/Providers';
-import { Toaster } from '@/components/ui/sonner';
-import type { Metadata } from 'next';
-import { Lato } from 'next/font/google';
-import NextTopLoader from 'nextjs-toploader';
-import './globals.css';
+import '@/styles/globals.css';
+import { Inter } from 'next/font/google';
+import { AuthProvider } from '@/app/auth/_components';
 
-export const metadata: Metadata = {
-  title: 'Next Shadcn',
-  description: 'Basic dashboard with Next.js and Shadcn'
-};
+export const runtime = 'nodejs';
 
-const lato = Lato({
-  subsets: ['latin'],
-  weight: ['400', '700', '900'],
-  display: 'swap'
-});
+const inter = Inter({ subsets: ['latin'] });
 
-export default async function RootLayout({
-  children
-}: {
+interface RootLayoutProps {
   children: React.ReactNode;
-}) {
-  const session = await auth();
+}
+
+export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html
-      lang="en"
-      className={`${lato.className}`}
-      suppressHydrationWarning={true}
-    >
-      <body className={'overflow-hidden'}>
-        <NextTopLoader showSpinner={false} />
-        <Providers session={session}>
-          <Toaster />
-          {children}
-        </Providers>
+    <html lang="en">
+      <body className={inter.className}>
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

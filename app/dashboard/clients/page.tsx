@@ -1,19 +1,22 @@
-import { searchParamsCache } from '@/lib/searchparams';
-import { SearchParams } from 'nuqs/parsers';
-import React from 'react';
-import UserListingPage from './_components/ClientListingPage';
+'use client';
 
-type pageProps = {
-  searchParams: SearchParams;
-};
+import { trpc } from '@/lib/trpc/client';
 
-export const metadata = {
-  title: 'Dashboard : Clients'
-};
+interface ClientData {
+  id: string;
+  displayName: string;
+}
 
-export default async function Page({ searchParams }: pageProps) {
-  // Allow nested RSCs to access the search params (in a type-safe way)
-  searchParamsCache.parse(searchParams);
+export default function ClientsPage() {
+  const { data: clients, isLoading } = trpc.clients.list.useQuery();
 
-  return <UserListingPage />;
+  if (isLoading) return <div>Loading...</div>;
+
+  return (
+    <div>
+      {clients?.map((client: ClientData) => (
+        <div key={client.id}>{client.displayName}</div>
+      ))}
+    </div>
+  );
 }

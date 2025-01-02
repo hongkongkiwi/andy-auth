@@ -1,0 +1,158 @@
+// Import abstract models
+import "abstract_models.zmodel"
+import "json_types.zmodel"
+import "auth.zmodel"
+import "patrol.zmodel"
+import "device.zmodel"
+
+/// A workspace is the top-level organizational unit that contains clients, users, and devices
+model Workspace extends Id, Sluggable, CreatedUpdated, SoftDelete, SchemaWorkspaceClient {
+  /// The display name for the workspace (can contain spaces and special characters)
+  displayName String @map("display_name")
+  /// The unique legal/registered company name across all workspaces
+  companyName String @unique @map("company_name")
+  /// List of contact persons associated with this workspace
+  // contactPeople ContactPerson[] @json @map("contact_people")
+  /// Primary business email for official communications
+  companyEmail String? @email(message: "Must be a valid email address") @map("company_email")
+  /// Official company website URL
+  companyWebsite String? @url(message: "Website must be a valid URL") @map("company_website")
+  /// Primary contact phone number in international format (+XXXXXXXXXXX)
+  companyPhoneNumber String? @regex('^\\+?[0-9]{10,15}$', message: "Must be a valid phone number") @map("company_phone_number")
+  /// Timezone for scheduling and displays (format: Region/City)
+  timezone String? @regex('^[A-Za-z_]+\/[A-Za-z_]+$', message: "Must be a valid timezone identifier for example Europe/Amsterdam")
+  /// Status of the workspace
+  workspaceStatus WorkspaceStatus @default(ACTIVE) @map("workspace_status")
+  /// URL to the workspace logo
+  imageUrl String? @map("image_url")
+  /// Notes for the workspace
+  notes String? @db.Text
+
+  // Relations
+  /// List of clients associated with this workspace
+  clients Client[]
+  /// List of client locations associated with this workspace
+  clientLocations ClientLocation[]
+  /// List of platform users associated with this workspace
+  platformUsers PlatformUser[]
+  /// List of devices associated with this workspace
+  devices Device[]
+  /// List of incidents associated with this workspace
+  incidents Incident[]
+  /// List of workspace permissions associated with this workspace
+  workspacePermissions WorkspacePermission[]
+  /// List of patrol routes associated with this workspace
+  patrolRoutes PatrolRoute[]
+  /// List of users that are default for this workspace
+  defaultForUsers PlatformUser[] @relation("DefaultWorkspace")
+
+  // Essential indexes for common queries
+  @@index([companyName])
+
+  // Zenstack Permissions
+  @@allow("all", true)
+
+  // Model Mappings
+  @@map("workspaces")
+}
+
+enum WorkspaceStatus {
+  ACTIVE
+  SUSPENDED
+
+  @@map("workspace_status_enum")
+  @@schema("workspace_client")
+}
+
+enum ClientStatus {
+  ACTIVE @map("active")
+  INACTIVE @map("inactive")
+  SUSPENDED @map("suspended")
+
+  @@map("client_status_enum")
+  @@schema("workspace_client")
+}
+
+/// Client is a company or organization attached to a workspace
+model Client extends Id, Notes, Sluggable, CreatedUpdated, SchemaWorkspaceClient {
+  /// Display name for the client
+  displayName String @map("display_name")
+  /// Status of the client
+  status ClientStatus @default(ACTIVE) @map("status")
+  /// Company name for the client
+  companyName String? @unique @map("company_name")
+  /// Primary business email for official communications
+  clientEmail String? @email(message: "Must be a valid email address") @map("client_email")
+  /// Official company website URL
+  clientWebsite String? @url(message: "Website must be a valid URL") @map("client_website")
+  /// Primary contact phone number in international format (+XXXXXXXXXXX)
+  clientPhoneNumber String? @regex('^\\+?[0-9]{10,15}$', message: "Must be a valid phone number") @map("client_phone_number")
+  /// URL to the client logo
+  imageUrl String? @map("image_url")
+
+  /// Address for the client
+  address GooglePlacesAutocomplete? @json
+  /// Contact people for the client
+  //contactPeople ContactPerson[] @json @map("contact_people")
+
+  /// Reference to the workspace this client belongs to
+  workspaceId String @map("workspace_id")
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+  /// Locations for the client
+  locations ClientLocation[]
+  /// Devices for the client
+  devices Device[]
+  /// Incidents for the client
+  incidents Incident[]
+  /// Permissions for the client
+  permissions ClientPermission[]
+  /// Patrol routes for the client
+  patrolRoutes PatrolRoute[]
+
+  // Indexes and Unique Constraints
+  @@index([workspaceId])
+
+  // Zenstack Permissions
+  @@allow("all", true)
+
+  // DB Table name
+  @@map("clients")
+}
+
+model ClientLocation extends Id, Notes, Sluggable, CreatedUpdated, SchemaWorkspaceClient {
+  displayName String @map("display_name")
+  /// Contact people for this location
+  // contactPeople ContactPerson @json @map("contact_people")
+  /// Address for this location
+  address GooglePlacesAutocomplete @json
+  /// Timezone for scheduling and displays (format: Region/City)
+  timezone String? @regex('^[A-Za-z_]+\/[A-Za-z_]+$', message: "Must be a valid timezone identifier for example Europe/Amsterdam")
+  /// Type of location
+  locationType String @map("location_type")
+
+  /// Reference to the client ID this location belongs to
+  clientId String @map("client_id")
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  /// Workspace ID for this location
+  workspaceId String @map("workspace_id")
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  /// Reference to the incidents at this location
+  incidents Incident[]
+  /// Reference to the checkpoints at this location
+  checkpoints Checkpoint[]
+  /// Reference to the patrol routes at this location
+  patrolRoutes PatrolRoute[]
+  /// Reference to the permissions for this location
+  permissions ClientLocationPermission[]
+
+  // Indexes and Unique Constraints
+  @@index([clientId])
+  @@unique([clientId, displayName])
+
+  // Zenstack Permissions
+  @@allow("all", true)
+
+  // DB Table name
+  @@map("client_locations")
+}
+

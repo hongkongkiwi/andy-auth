@@ -1,36 +1,43 @@
 'use client';
 
-import React, { createContext, useContext } from 'react';
-import type { Workspace, WorkspaceContextType } from '../types';
-import type { NavigationItem } from '@/components/layout/Navigation/types';
-import { workspaceNavItems as defaultWorkspaceItems } from '@/constants/navigation';
+import { createContext, useContext, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { api, type RouterOutputs } from '@/lib/trpc/client';
+import type { WorkspaceContextType, WorkspaceFromAPI } from '../types';
 
-const WorkspaceContext = createContext<WorkspaceContextType>({
-  selectedWorkspace: null,
-  setSelectedWorkspace: () => {},
-  isTransitioning: false,
-  setIsTransitioning: () => {},
-  workspaceNavItems: defaultWorkspaceItems,
-  setWorkspaceNavItems: () => {},
-  workspace: true,
-});
+const WorkspaceContext = createContext<WorkspaceContextType | undefined>(
+  undefined
+);
 
-export const WorkspaceProvider = ({ children }: { children: React.ReactNode }) => {
-  const [selectedWorkspace, setSelectedWorkspace] = React.useState<Workspace | null>(null);
-  const [isTransitioning, setIsTransitioning] = React.useState(false);
-  const [workspaceNavItems, setWorkspaceNavItems] = React.useState<NavigationItem[]>(defaultWorkspaceItems);
-  const [workspace] = React.useState(true);
-  
+export const WorkspaceProvider = ({
+  children
+}: {
+  children: React.ReactNode;
+}) => {
+  const [selectedWorkspace, setSelectedWorkspace] =
+    useState<WorkspaceFromAPI | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+
+  const handleWorkspaceSwitch = async (workspace: WorkspaceFromAPI) => {
+    setIsLoading(true);
+    try {
+      setSelectedWorkspace(workspace);
+      await router.push('/dashboard');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <WorkspaceContext.Provider value={{ 
-      selectedWorkspace, 
-      setSelectedWorkspace,
-      isTransitioning, 
-      setIsTransitioning,
-      workspaceNavItems,
-      setWorkspaceNavItems,
-      workspace
-    }}>
+    <WorkspaceContext.Provider
+      value={{
+        selectedWorkspace,
+        setSelectedWorkspace,
+        handleWorkspaceSwitch,
+        isLoading
+      }}
+    >
       {children}
     </WorkspaceContext.Provider>
   );
@@ -38,6 +45,8 @@ export const WorkspaceProvider = ({ children }: { children: React.ReactNode }) =
 
 export const useWorkspace = () => {
   const context = useContext(WorkspaceContext);
-  if (!context) throw new Error('useWorkspace must be used within WorkspaceProvider');
+  if (!context) {
+    throw new Error('useWorkspace must be used within a WorkspaceProvider');
+  }
   return context;
-}; 
+};

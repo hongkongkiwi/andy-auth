@@ -1,29 +1,34 @@
 'use client';
 
-import React from 'react';
-import { cn } from "@/lib/utils";
-import { SidebarGroup, SidebarGroupLabel, SidebarMenu } from "@/components/ui/sidebar";
-import { NavigationProps } from '../types';
+import { type FC } from 'react';
+import { cn } from '@/lib/utils';
+import { type NavigationProps } from '../types';
 import { NavigationItemRenderer } from './NavigationItemRenderer';
 
-export const Navigation: React.FC<NavigationProps> = ({ 
-  items, 
-  label,
+export const Navigation: FC<NavigationProps> = ({
+  items,
+  label = 'Main Navigation',
   className,
+  isCollapsed,
   ...props
-}) => {
-  return (
-    <SidebarGroup className={cn("-mt-2", className)}>
-      {label && <SidebarGroupLabel>{label}</SidebarGroupLabel>}
-      <SidebarMenu>
-        {items.map((item) => (
-          <NavigationItemRenderer
-            key={item.id}
-            item={item}
-            {...props}
-          />
-        ))}
-      </SidebarMenu>
-    </SidebarGroup>
-  );
-}; 
+}) => (
+  <nav
+    aria-label={label}
+    className={cn(
+      'flex flex-col gap-2 p-2',
+      isCollapsed && 'w-[70px]',
+      className
+    )}
+  >
+    {items.map((item) => (
+      <NavigationItemRenderer
+        key={item.id}
+        item={item}
+        isCollapsed={isCollapsed}
+        {...props}
+      />
+    ))}
+  </nav>
+);
+
+Navigation.displayName = 'Navigation:Root';

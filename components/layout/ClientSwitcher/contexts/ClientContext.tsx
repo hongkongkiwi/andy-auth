@@ -1,64 +1,49 @@
 'use client';
 
-import { createContext, useState, useEffect, type ReactNode, useCallback } from 'react';
-import { NavigationItem, ClientContextType } from '../types';
-import type { Client } from '@/constants/mock-api';
+import { createContext, useContext, useState } from 'react';
+import { api, type RouterOutputs } from '@/lib/trpc/client';
+import { useRouter } from 'next/navigation';
+import type { ClientContextType, ClientFromAPI } from '../types';
 
-export const ClientContext = createContext<ClientContextType | null>(null);
+export const ClientContext = createContext<ClientContextType | undefined>(
+  undefined
+);
 
-export const ClientProvider: React.FC<{ 
-  children: ReactNode;
-  navigationItems: NavigationItem[];
-}> = ({ children, navigationItems = [] }) => {
-  const [mounted, setMounted] = useState(false);
-  const [selectedClient, setSelectedClientState] = useState<Client | null>(null);
-  const [clientNavItems, setClientNavItems] = useState<NavigationItem[]>(navigationItems);
-  
-  const setSelectedClient = useCallback((client: Client | null) => {
-    setSelectedClientState(client);
-  }, []);
+export const ClientProvider = ({ children }: { children: React.ReactNode }) => {
+  const [selectedClient, setSelectedClient] = useState<ClientFromAPI>();
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
-  useEffect(() => {
-    const stored = localStorage.getItem('selectedClient');
-    if (stored) {
-      setSelectedClient(JSON.parse(stored));
+  const handleClientSwitch = async (client: ClientFromAPI | undefined) => {
+    setIsLoading(true);
+    try {
+      setSelectedClient(client);
+      if (client) {
+        await router.push(`/dashboard/clients/${client.id}`);
+      } else {
+        await router.push('/dashboard/clients');
+      }
+    } finally {
+      setIsLoading(false);
     }
-    setMounted(true);
-  }, [setSelectedClient]);
-
-  useEffect(() => {
-    if (!mounted) return;
-    
-    if (selectedClient) {
-      localStorage.setItem('selectedClient', JSON.stringify(selectedClient));
-      document.title = `${selectedClient.name} - Dashboard`;
-      
-      const updatedNavItems = navigationItems.map(item => ({
-        ...item,
-        href: item.href ? item.href.replace('/client/', `/client/${selectedClient.id}/`) : `/client/${selectedClient.id}/overview`
-      }));
-      setClientNavItems(updatedNavItems);
-    } else {
-      localStorage.removeItem('selectedClient');
-      document.title = 'Dashboard';
-      setClientNavItems(navigationItems || []);
-    }
-
-    return () => {
-      document.title = 'Dashboard';
-    };
-  }, [selectedClient, mounted, navigationItems]);
+  };
 
   const value = {
     selectedClient,
     setSelectedClient,
-    clientNavItems,
-    setClientNavItems
+    handleClientSwitch,
+    isLoading
   };
 
   return (
-    <ClientContext.Provider value={value}>
-      {children}
-    </ClientContext.Provider>
+    <ClientContext.Provider value={value}>{children}</ClientContext.Provider>
   );
+};
+
+export const useClient = () => {
+  const context = useContext(ClientContext);
+  if (!context) {
+    throw new Error('useClient must be used within a ClientProvider');
+  }
+  return context;
 };

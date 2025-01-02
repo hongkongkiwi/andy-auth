@@ -1,0 +1,64 @@
+import "abstract_models.zmodel"
+import "workspace.zmodel"
+import "patrol.zmodel"
+
+/// Body camera, mobile device attached to a client
+model Device extends Id, CreatedUpdated, SchemaWorkspaceClient {
+  /// Name of the device  
+  deviceName String @map("device_name")
+  /// Model of the device
+  deviceModel String @map("device_model")
+  /// Serial number of the device
+  serialNumber String @unique @map("serial_number")
+  /// MQTT IoT Thing Name
+  mqttIotThingName String? @unique @regex('^[a-zA-Z0-9\-_]{1,128}$', message: "Must be a valid AWS IoT Thing Name (1-128 characters, alphanumeric, hyphens and underscores only)") @map("mqtt_iot_thing_name")
+  /// MQTT IoT Client ID
+  mqttIotClientId String? @unique @regex('^[a-zA-Z0-9-]{1,128}$', message: "Must be a valid AWS IoT client ID (1-128 characters, alphanumeric and hyphens only)") @map("mqtt_iot_client_id")
+  /// MQTT IoT Shadow
+  mqttIotShadow Json? @map("mqtt_iot_shadow")
+  /// Type of device
+  deviceType DeviceType @default(UNKNOWN) @map("device_type")
+  /// Status of the device
+  deviceStatus DeviceStatus @default(ACTIVE) @map("device_status")
+
+  /// Reference to the workspace ID this device belongs to
+  workspaceId String?
+  workspace Workspace? @relation(fields: [workspaceId], references: [id])
+  /// Reference to the client ID this device belongs to
+  clientId String?
+  client Client? @relation(fields: [clientId], references: [id])
+  /// Reference to the checkpoint scans this device has been used in
+  checkpointScans CheckpointScan[]
+  /// Reference to the incidents this device has been used in
+  incidents Incident[]
+  /// Reference to the patrol sessions this device has been used in
+  patrolSessions PatrolSession[]
+
+  // Indexes and Unique Constraints
+  @@index([workspaceId])
+  @@index([clientId])
+
+  // Zenstack Permissions
+  @@allow("all", true)
+
+  // DB Table name
+  @@map("devices")
+}
+
+enum DeviceType {
+  BODY_CAMERA @map("body_camera")
+  MOBILE @map("mobile")
+  UNKNOWN @map("unknown")
+
+  @@map("device_type_enum")
+  @@schema("workspace_client")
+}
+
+enum DeviceStatus {
+  ACTIVE @map("active")
+  INACTIVE @map("inactive")
+  MAINTENANCE @map("maintenance")
+
+  @@map("device_status_enum")
+  @@schema("workspace_client")
+}

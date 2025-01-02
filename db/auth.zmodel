@@ -1,0 +1,533 @@
+import "abstract_models.zmodel"
+import "json_types.zmodel"
+import "workspace.zmodel"
+import "patrol.zmodel"
+
+/// User statuses
+enum PlatformUserStatus {
+  /// User account is active and can access the system
+  ACTIVE @map("active")
+  /// This is where we use the account only for a guard so they cannot login to the system
+  GUARD_LOGIN_ONLY @map("guard_login_only")
+  /// Locked temporarily due to too many failed login attempts
+  LOCKED_LOGIN_ATTEMPTS @map("locked_login_attempts")
+  /// Locked temporarily due to high risk of account compromise
+  LOCKED_HIGH_RISK @map("locked_high_risk")
+  /// Pending email or phone verification
+  LOCKED_AWAITING_VERIFICATION @map("locked_awaiting_verification")
+  /// User account has been suspended and cannot access the system
+  LOCKED_SUSPENDED @map("locked_suspended")
+
+  @@map("platform_user_status_enum")
+  @@schema("platform_auth")
+}
+
+/// Emergency contact information
+type EmergencyContact {
+  name String
+  phoneNumber String
+  emailAddress String?
+  address String?
+  relationship String
+}
+
+enum PersonGender {
+  MALE @map("male")
+  FEMALE @map("female")
+  OTHER @map("other")
+  PREFER_NOT_TO_SAY @map("prefer_not_to_say")
+
+  @@map("person_gender_enum")
+  @@schema("platform_auth")
+}
+
+/// Guard profile holds the guard information for security guards
+model GuardProfile extends Id, CreatedUpdated, SoftDelete, SchemaPlatformAuth {
+  /// Unique ID for guard staff
+  guardStaffId String @unique @map("guard_staff_id")
+  /// PIN number for on-device authentication
+  guardPinNumber String? @length(6, 100, message: "PIN must be 6 or more digits") @regex('^[0-9]+$', message: "PIN must contain only numbers") @map("guard_pin_number")
+  
+  /// Associated user
+  userId String? @unique @map("user_id")
+  user PlatformUser? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Patrol sessions for this user
+  patrolSessions PatrolSession[]
+
+  // Add indexes
+  @@index([guardStaffId])
+  @@index([userId])
+
+  // Zenstack Permissions
+  @@allow('all', true)
+
+  // Model Mappings
+  @@map("guard_profiles")
+}
+
+model UserProfile extends Id, CreatedUpdated, SoftDelete, SchemaPlatformAuth {
+  firstName String?
+  lastName String?
+  nickName String?
+  profileImage String?
+  emergencyContact EmergencyContact? @json
+  address String?
+  gender PersonGender?
+
+  /// User this profile belongs to
+  userId String? @unique @map("user_id")
+  user PlatformUser? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("user_profiles")
+}
+
+/// Platform-wide user model
+model PlatformUser extends Id, CreatedUpdated, SoftDelete, SchemaPlatformAuth {
+  /// Person profile specific to the user
+  personProfileId String? @unique @map("person_profile_id")
+  personProfile UserProfile?
+
+  /// Email address for this user
+  emailAddress                     String? @email @unique @map("email_address")
+  /// Date when email address was verified or null if not verified
+  emailAddressVerifiedAt           DateTime? @map("email_address_verified_at")
+  /// Phone number in E.164 format
+  phoneNumber String? @regex('^\\+?[0-9]{10,15}$', message: "Must be a valid phone number") @unique @map("phone_number")
+  /// Date when phone number was verified or null if not verified
+  phoneNumberVerifiedAt DateTime? @map("phone_number_verified_at")
+
+  /// Hashed password for local authentication
+  userPassword                  String?                    @password(saltLength: 12) @omit @map("user_password")
+
+  /// Whether two-factor authentication is enabled for this user
+  isTwoFactorEnabled        Boolean                    @default(false) @map("is_two_factor_enabled")
+      
+  /// Current status of the user account
+  userStatus                    PlatformUserStatus                 @default(ACTIVE) @map("user_status")
+
+  /// User's preferred locale/language
+  languageLocale String? @default("en") @lower @regex('^[a-z]{2}(-[A-Z]{2})?$', message: "Must be a valid locale code") @map("language_locale")
+  /// User's timezone
+  timezone                String?   @default("UTC") @upper
+  /// Whether user has completed initial onboarding
+  isOnboardingCompleted   Boolean   @default(false) @map("is_onboarding_completed")
+  /// Date when terms were accepted
+  termsAcceptedAt        DateTime? @map("terms_accepted_at")
+  /// Force password change on next login
+  forcePasswordChange Boolean @default(false) @map("force_password_change")
+  /// Last password change timestamp
+  lastPasswordChangeAt DateTime? @map("last_password_change_at")
+  /// Login Locked Until
+  loginLockedUntil DateTime? @map("login_locked_until")
+
+  /// Last successful login timestamp
+  lastLoginAt DateTime? @map("last_login_at")
+  
+  /// Failed login attempts count
+  failedLoginAttempts Int @default(0) @map("failed_login_attempts")
+
+  /// User's MFA recovery codes
+  mfaRecoveryCodes String[] @map("mfa_recovery_codes")
+
+  /// User's default workspace after login
+  defaultWorkspaceId String? @map("default_workspace_id")
+  defaultWorkspace Workspace? @relation("DefaultWorkspace", fields: [defaultWorkspaceId], references: [id])
+
+  /// User's settings
+  settings Json?
+
+  /// Guard profile if user is a guard
+  guardProfile GuardProfile?
+  // Login and Session Fields
+  /// User's login attempts
+  userLoginAttempts PlatformUserLoginAttempt[]
+  /// OAuth accounts linked to this user
+  accounts                  PlatformUserAccount[]
+  /// Active sessions for this user
+  sessions                  PlatformUserSession[]
+  /// Workspaces the user belongs to
+  workspaces                Workspace[]
+  /// WebAuthn authenticators registered to this user
+  authenticators            PlatformUserAuthenticator[]
+
+  // Permissions Fields
+  /// User's permissions in various workspaces
+  workspacePermissions      WorkspacePermission[]
+  /// User's permissions in various clients
+  clientPermissions         ClientPermission[]
+  /// User's permissions in various client locations
+  clientLocationPermissions ClientLocationPermission[]
+  /// User's MFA backup codes
+  mfaBackupCodes MFABackupCode[]
+
+  // Add indexes for common lookup patterns and foreign key relationships
+  @@index([emailAddress])
+  @@index([phoneNumber])
+  @@index([userStatus])
+  @@index([lastLoginAt])
+  @@index([defaultWorkspaceId])
+
+  // Zenstack Permissions
+  @@auth()
+  @@allow('all', true)
+
+  // Model Mappings
+  @@map("platform_users")
+}
+
+/// Platform User login attempts
+model PlatformUserLoginAttempt extends Id, CreatedUpdated, Expires, SchemaPlatformAuth {
+  /// User's id
+  userId String @map("user_id")
+  /// User
+  user PlatformUser @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  /// Whether the login attempt was successful
+  isLoginFailed Boolean @default(false)
+  /// IP address of the login attempt
+  ipAddress String? @map("ip_address")
+  /// Location of the login attempt
+  location String?
+  /// User agent string from the login attempt
+  userAgent String? @map("user_agent")
+  /// Device type (mobile, desktop, tablet, etc.)
+  deviceType String? @map("device_type")
+  /// Browser name and version
+  browser String?
+  /// Operating system
+  operatingSystem String? @map("operating_system")
+  /// Failure reason if the attempt failed (wrong password, invalid token, etc.)
+  failureReason String? @map("failure_reason")
+  /// Authentication method used (password, oauth, webauthn, etc.)
+  authMethod String? @map("auth_method")
+  /// Session ID if login was successful
+  sessionId String? @map("session_id")
+  /// Risk score (if you implement risk-based authentication)
+  riskScore Float? @map("risk_score") @default(0)
+
+  /// MFA method used if applicable
+  mfaMethod String? @map("mfa_method")
+  
+  /// Whether MFA was required for this attempt
+  mfaRequired Boolean @default(false) @map("mfa_required")
+  
+  /// Whether MFA was successful
+  mfaSuccessful Boolean? @map("mfa_successful")
+
+  // Add index for user login history queries
+  @@index([userId, createdAt])
+  @@index([isLoginFailed, createdAt])
+
+  // Zenstack Permissions
+  @@allow('all', true)
+
+  // Model Mappings
+  @@map("platform_user_login_attempts")
+}
+
+/// Authentication accounts linked to a user
+model PlatformUserAccount extends CreatedUpdated, SoftDelete, SchemaPlatformAuth {
+  // ID is a composite of provider and providerAccountId
+
+  /// Reference to the user who owns this account
+  userId            String      @map("user_id")
+  /// Reference to the user
+  user              PlatformUser        @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  /// Type of OAuth account (oauth, email, etc)
+  type              NextAuthAccountType
+  /// OAuth provider name (google, github, etc)
+  provider          String
+  /// Unique ID from the OAuth provider
+  providerAccountId String      @map("provider_account_id")
+  /// OAuth refresh token used to obtain new access tokens
+  refreshToken      String?     @map("refresh_token")
+  /// OAuth access token for API requests
+  accessToken       String?     @map("access_token")
+  /// Timestamp when the access token expires
+  expiresAt         Int?        @map("expires_at")
+  /// Type of OAuth token (e.g., Bearer)
+  tokenType         String?     @map("token_type")
+  /// OAuth permission scopes granted to the application
+  scope             String?
+  /// JWT token containing user information
+  idToken           String?     @map("id_token")
+  /// OAuth session state for security validation
+  sessionState      String?     @map("session_state")
+
+  // ID is a composite of provider and providerAccountId
+  @@id([provider, providerAccountId])
+
+  // Add index for user account lookups
+  @@index([userId])
+
+  // Zenstack Permissions
+  @@allow('all', true)
+
+  // Model Mappings
+  @@map("platform_user_accounts")
+}
+
+enum NextAuthAccountType {
+  OAUTH @map("oauth")
+  OIDC @map("oidc")
+  EMAIL @map("email")
+  WEBAUTHN @map("webauthn")
+
+  @@map("next_auth_account_type_enum")
+  @@schema("platform_auth")
+}
+
+model PlatformUserSession extends Id, CreatedUpdated, SchemaPlatformAuth {
+  /// Unique session token
+  sessionToken String @unique @map("session_token")
+  /// Reference to the user who owns this session
+  userId       String @map("user_id")
+  /// Reference to the user
+  user         PlatformUser   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  /// Date when session expires
+  expiresAt DateTime?
+
+  /// IP address of the session
+  ipAddress String? @map("ip_address")
+  
+  /// User agent string
+  userAgent String? @map("user_agent")
+  
+  /// Last activity timestamp
+  lastActivityAt DateTime @default(now()) @map("last_activity_at")
+
+  // Add index for active session lookups
+  @@index([userId, expiresAt])
+  @@index([lastActivityAt])
+
+  // Zenstack Permissions
+  @@allow('all', true)
+
+  // Model Mappings
+  @@map("platform_user_sessions")
+}
+
+model PlatformUserVerificationToken extends Expires, SchemaPlatformAuth {
+  /// User identifier (email or phone)
+  identifier String
+  /// Verification token
+  token      String
+  /// Type of verification token
+  type       VerificationTokenType
+
+  // ID is a composite of identifier, token, and type
+  @@id([identifier, token, type])
+
+  // Zenstack Permissions
+  @@allow('all', true)
+
+  // Model Mappings
+  @@map("platform_user_verification_tokens")
+}
+
+enum VerificationTokenType {
+  /// Token for email-based login verification
+  EMAIL_LOGIN @map("email_login")
+  /// Token for adding a new email to account
+  EMAIL_ADD @map("email_add")
+  /// Token for phone-based login verification
+  PHONE_LOGIN @map("phone_login")
+  /// Token for adding a new phone to account
+  PHONE_ADD @map("phone_add")
+  /// Token for password reset process
+  PASSWORD_RESET @map("password_reset")
+  /// Token for two-factor authentication
+  TWO_FACTOR @map("two_factor")
+  /// Token for email address change verification
+  EMAIL_CHANGE @map("email_change")
+  /// Token for account deletion confirmation
+  ACCOUNT_DELETE @map("account_delete")
+
+  @@map("verification_token_type_enum")
+  @@schema("platform_auth") 
+}
+
+// Optional for WebAuthn support
+model PlatformUserAuthenticator extends CreatedUpdated, SchemaPlatformAuth {
+  /// Unique identifier for the WebAuthn credential
+  credentialID         String  @unique @map("credential_id")
+  /// Provider account ID
+  providerAccountId    String  @map("provider_account_id")
+  /// Public key used for WebAuthn authentication
+  credentialPublicKey  String  @map("credential_public_key")
+  /// Signature counter to prevent replay attacks
+  counter              Int
+  /// Type of authenticator device (e.g., platform, cross-platform)
+  credentialDeviceType String  @map("credential_device_type")
+  /// Indicates if credential is synced/backed up
+  isCredentialBackedUp Boolean @map("is_credential_backed_up")
+  /// Allowed authentication transport methods (e.g., usb, nfc, ble)
+  transports           String?
+
+  /// Associated user ID who owns this authenticator
+  userId               String  @map("user_id")
+  /// Reference to the user
+  user                 PlatformUser    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  // ID is a composite of userId and credentialID
+  @@id([userId, credentialID])
+
+  // Add index for WebAuthn credential lookups
+  @@index([userId, credentialDeviceType])
+
+  // Zenstack Permissions
+  @@allow('all', true)
+
+  // Model Mappings
+  @@map("platform_user_authenticators")
+}
+
+// enum TokenPurpose {
+//   /// Token for verifying user identity
+//   IDENTITY_VERIFICATION
+//   /// Token for password reset
+//   RESET_PASSWORD
+//   /// Token for login
+//   LOGIN
+//   /// Token for multi-factor authentication
+//   MFA
+
+//   @@schema("auth")
+//   @@map("token_purpose")
+// }
+
+// enum TokenStatus {
+//   /// Token is waiting to be used
+//   PENDING @map("pending")
+//   /// Token has been verified
+//   VERIFIED @map("verified")
+//   /// Token has expired
+//   EXPIRED @map("expired")
+//   /// Token has been cancelled
+//   CANCELLED @map("cancelled")
+
+//   @@schema("auth")
+//   @@map("token_status")
+// }
+
+enum WorkspacePermissionType {
+  READ @map("read")
+  WRITE @map("write")
+  ADMIN @map("admin")
+
+  @@map("workspace_permission_type_enum")
+  @@schema("platform_auth")
+}
+
+model WorkspacePermission extends Id, CreatedUpdated {
+  /// Array of permission strings defining access rights for this workspace
+  permissions WorkspacePermissionType[]
+  
+  // Relations
+  /// Reference to the user ID who has these workspace permissions
+  userId String @map("user_id")
+  user PlatformUser @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  /// Reference to the workspace ID these permissions apply to
+  workspaceId String @map("workspace_id")
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  // Indexes and Unique Constraints
+  @@unique([userId, workspaceId])
+  @@index([userId])
+  @@index([workspaceId])
+  
+  // Zenstack Permissions
+  @@allow("all", true)
+
+  // Model Mappings
+  @@map("workspace_permissions")
+  @@schema("platform_auth")
+}
+
+enum ClientPermissionType {
+  READ @map("read")
+  WRITE @map("write")
+  ADMIN @map("admin")
+
+  @@map("client_permission_type_enum")
+  @@schema("platform_auth")
+}
+
+model ClientPermission extends Id, CreatedUpdated {
+  /// Array of permission strings defining access rights for this client
+  permissions ClientPermissionType[]
+  
+  // Relations
+  /// Reference to the user ID who has these client permissions
+  userId String @map("user_id")
+  user PlatformUser @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  /// Reference to the client ID these permissions apply to
+  clientId String @map("client_id")
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  // Indexes and Unique Constraints
+  @@unique([userId, clientId])
+  @@index([userId])
+  @@index([clientId])
+
+  // Zenstack Permissions
+  @@allow("all", true)
+
+  // Model Mappings
+  @@map("client_permissions")
+  @@schema("platform_auth")
+}
+
+enum ClientLocationPermissionType {
+  READ @map("read")
+  WRITE @map("write")
+  ADMIN @map("admin")
+
+  @@map("client_location_permission_type_enum")
+  @@schema("platform_auth")
+}
+
+model ClientLocationPermission extends Id, CreatedUpdated {
+  /// Array of permission strings defining access rights for this client location
+  permissions ClientLocationPermissionType[]
+  
+  // Relations
+  /// Reference to the user ID who has these location permissions
+  userId String @map("user_id")
+  user PlatformUser @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  /// Reference to the location ID these permissions apply to
+  locationId String @map("location_id")
+  location ClientLocation @relation(fields: [locationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  // Indexes and Unique Constraints
+  @@unique([userId, locationId])
+  @@index([userId])
+  @@index([locationId])
+
+  // Zenstack Permissions
+  @@allow("all", true)
+
+  // Model Mappings
+  @@map("client_location_permissions")
+  @@schema("platform_auth")
+}
+
+// Add a new model for MFA backup codes
+model MFABackupCode extends Id, CreatedUpdated, SchemaPlatformAuth {
+  /// The backup code hash
+  codeHash String @map("code_hash")
+  
+  /// Whether the code has been used
+  isUsed Boolean @default(false) @map("is_used")
+  
+  /// When the code was used
+  usedAt DateTime? @map("used_at")
+  
+  /// User who owns this backup code
+  userId String @map("user_id")
+  user PlatformUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("mfa_backup_codes")
+}

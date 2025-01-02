@@ -1,0 +1,75 @@
+import "abstract_models.zmodel"
+import "json_types.zmodel"
+import "workspace.zmodel"
+import "patrol.zmodel"
+
+model SeedExecution extends Id, CreatedUpdated {
+  seedName   String   @unique @map("seed_name")
+  executedAt DateTime @default(now()) @map("executed_at")
+
+  @@map("seed_executions")
+  @@schema("development")
+}
+
+/// Object storage file model for files uploaded to S3, Azure, or GCP
+model ObjectStorageFile extends Id, CreatedUpdated, SchemaWorkspaceClient {
+  /// Object storage service name
+  storageService ObjectStorageService @default(S3) @map("storage_service")
+  /// Object storage key for the file
+  objectKey String @map("object_key")
+  /// Object storage bucket for the file
+  objectBucket String @map("object_bucket")
+  /// Object storage region for the file
+  objectRegion String? @map("object_region")
+  /// Whether the object is public
+  isPublicObject Boolean @default(false) @map("is_public_object")
+  /// Signed GET URL for the file
+  signedGetUrl String? @map("signed_get_url")
+  /// Signed GET URL expiration date
+  signedGetUrlExpiresAt DateTime? @map("signed_get_url_expires_at")
+  /// MIME type of the file
+  mimeType String? @map("mime_type")
+  /// Modified date of the file
+  modifiedAt DateTime @map("modified_at")
+  /// Size of the file
+  size Int?
+  /// ETag of the file (MD5 hash)
+  eTag String? @map("e_tag")
+  /// Version ID (if versioning is enabled on the bucket)
+  versionId String? @map("version_id")
+  /// Server-side encryption algorithm
+  serverSideEncryption String? @map("server_side_encryption")
+  /// Content encoding (e.g., gzip)
+  contentEncoding String? @map("content_encoding")
+  /// Content disposition (e.g., inline, attachment)
+  contentDisposition String? @map("content_disposition")
+  /// Original filename when uploaded
+  originalFilename String? @map("original_filename")
+  /// Storage class (e.g., STANDARD, STANDARD_IA, GLACIER)
+  storageClass String? @map("storage_class")
+  /// Metadata of the file
+  metadata Json?
+
+  /// Reference to the incidents this file attachment belongs to
+  incidents Incident[]
+
+  // Indexes
+  @@unique([objectKey, objectBucket, objectRegion])
+  @@index([objectKey])
+  @@index([objectBucket])
+
+  // Zenstack Permissions
+  @@allow("all", true)
+
+  // DB Table name
+  @@map("object_storage_files")
+}
+
+enum ObjectStorageService {
+  S3 @map("s3")
+  AZURE @map("azure")
+  GCP @map("gcp")
+
+  @@map("object_storage_service_enum")
+  @@schema("workspace_client")
+}

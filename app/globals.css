@@ -1,3 +1,5 @@
+@import 'react-phone-input-2/lib/high-res.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -93,6 +95,97 @@
     height: 100vh; /* Fallback */
     height: 100dvh;
   }
+  .overflow-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Webkit browsers (Chrome, Safari) */
+  .custom-scrollbar {
+    &::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background-color: hsl(var(--muted-foreground) / 0.3);
+      border-radius: 4px;
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+      background-color: hsl(var(--muted-foreground) / 0.5);
+    }
+  }
+
+  /* Firefox */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+  }
+
+  /* Custom Scrollbar */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground) / 0.2);
+    border-radius: 20px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--accent));
+  }
+
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Hide scrollbar for IE, Edge and Firefox */
+  .scrollbar-hide {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+
+  .custom-scrollbar-sm {
+    scrollbar-width: thin;
+    scrollbar-gutter: stable;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background-color: hsl(var(--muted-foreground) / 0.1);
+      border-radius: 10px;
+      transition: background-color 0.15s ease;
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+      background-color: hsl(var(--muted-foreground) / 0.2);
+    }
+
+    /* Firefox */
+    scrollbar-color: hsl(var(--muted-foreground) / 0.1) transparent;
+  }
 }
 
 @layer base {
@@ -101,5 +194,219 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  /* Input field */
+  .react-tel-input input.w-full {
+    width: 100% !important;
+    height: 40px !important;
+    padding-left: 48px !important;
+    background-color: hsl(var(--background)) !important;
+    transition:
+      border-color 0.2s,
+      box-shadow 0.2s !important;
+  }
+
+  .react-tel-input input.w-full:focus-visible {
+    outline: none !important;
+    border-color: hsl(var(--ring)) !important;
+    box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2) !important;
+  }
+
+  /* Flag button */
+  .react-tel-input .bg-transparent {
+    background-color: hsl(var(--background)) !important;
+    border: 1px solid hsl(var(--input)) !important;
+    border-right: none !important;
+    border-radius: var(--radius) 0 0 var(--radius) !important;
+  }
+
+  /* Dropdown */
+  .react-tel-input .bg-background {
+    background-color: hsl(var(--background)) !important;
+    border: 1px solid hsl(var(--input)) !important;
+    border-radius: var(--radius) !important;
+    color: hsl(var(--foreground)) !important;
+  }
+
+  /* Search input */
+  .react-tel-input .border-input {
+    border: 1px solid hsl(var(--input)) !important;
+  }
+
+  .react-tel-input .text-foreground {
+    color: hsl(var(--foreground)) !important;
+  }
+
+  .react-tel-input .selected-flag {
+    background-color: transparent !important;
+    border-radius: var(--radius) 0 0 var(--radius) !important;
+    transition: background-color 0.2s ease;
+  }
+
+  .react-tel-input .selected-flag:hover,
+  .react-tel-input .selected-flag:focus,
+  .react-tel-input .selected-flag.open {
+    background-color: hsl(var(--accent)) !important;
+  }
+
+  .react-tel-input .selected-flag:focus-visible {
+    outline: none !important;
+    box-shadow: 0 0 0 2px hsl(var(--ring)) !important;
+  }
+
+  .react-tel-input .selected-flag .flag {
+    position: absolute !important;
+    top: 50% !important;
+    margin-top: -12px !important;
+  }
+
+  .react-tel-input .selected-flag .arrow {
+    position: relative !important;
+    top: 50% !important;
+    margin-top: -1px !important;
+    left: 30px !important;
+    border-left: 3px solid transparent !important;
+    border-right: 3px solid transparent !important;
+    border-top: 4px solid hsl(var(--foreground)) !important;
+  }
+
+  .react-tel-input .selected-flag .arrow.up {
+    border-top: none !important;
+    border-bottom: 4px solid hsl(var(--foreground)) !important;
+  }
+
+  .react-tel-input .country-list .country.highlight {
+    background-color: hsl(var(--accent)) !important;
+    color: hsl(var(--accent-foreground)) !important;
+  }
+
+  .react-tel-input .country-list .country:hover {
+    background-color: hsl(var(--accent)) !important;
+    color: hsl(var(--accent-foreground)) !important;
+  }
+
+  .react-tel-input .form-control {
+    width: 100% !important;
+    height: 40px !important;
+    padding: 8px 12px !important;
+    padding-left: 48px !important;
+    background-color: hsl(var(--background)) !important;
+    color: hsl(var(--foreground)) !important;
+    border: 1px solid hsl(var(--input)) !important;
+    border-radius: var(--radius) !important;
+    font-size: 14px !important;
+    transition: all 0.2s ease !important;
+  }
+
+  .react-tel-input input {
+    width: 100% !important;
+    height: 40px !important;
+    padding: 8px 12px !important;
+    padding-left: 48px !important;
+    background-color: hsl(var(--background)) !important;
+    color: hsl(var(--foreground)) !important;
+    border: 1px solid hsl(var(--input)) !important;
+    border-radius: var(--radius) !important;
+    font-size: 14px !important;
+    transition: all 0.2s ease !important;
+  }
+
+  /* Country List Search Input */
+  .react-tel-input .country-list {
+    background-color: hsl(var(--background)) !important;
+  }
+
+  .react-tel-input .country-list .search-box {
+    background-color: hsl(var(--background)) !important;
+    box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2) !important;
+  }
+
+  .react-tel-input .border-input {
+    border: 0px solid hsl(var(--input)) !important;
+    margin-top: 0px !important;
+  }
+
+  .react-tel-input .border-input:focus-visible {
+    border: 1px solid hsl(var(--ring)) !important;
+    box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2) !important;
+  }
+
+  .react-tel-input .country-list .search {
+    width: 100% !important;
+    height: 100% !important;
+    padding: 0.5rem 0.75rem !important;
+    padding-left: 0.75rem !important;
+    font-size: 0.875rem !important;
+    background-color: hsl(var(--background)) !important;
+    color: hsl(var(--foreground)) !important;
+  }
+
+  .react-tel-input .country-list .search:focus {
+    outline: none !important;
+    box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2) !important;
+  }
+
+  /* Country Select Styles */
+  .country-select .country-select__control {
+    @apply h-10 min-h-[40px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background;
+  }
+
+  .country-select .country-select__control:hover {
+    @apply border-input bg-background;
+  }
+
+  .country-select .country-select__control--is-focused {
+    @apply outline-none ring-2 ring-ring ring-offset-2;
+  }
+
+  .country-select .country-select__menu {
+    @apply mt-2 rounded-md border border-border bg-popover shadow-md;
+  }
+
+  .country-select .country-select__option {
+    @apply text-sm text-popover-foreground;
+  }
+
+  .country-select .country-select__option--is-focused {
+    @apply bg-accent text-accent-foreground;
+  }
+
+  .country-select .country-select__option--is-selected {
+    @apply bg-primary text-primary-foreground;
+  }
+
+  .country-select .country-select__value-container {
+    @apply text-foreground;
+  }
+
+  .country-select .country-select__single-value {
+    @apply text-foreground;
+  }
+
+  .country-select .country-select__input-container {
+    @apply text-foreground;
+  }
+
+  .country-select .country-select__indicator-separator {
+    @apply bg-input;
+  }
+
+  .country-select .country-select__indicator {
+    @apply text-muted-foreground;
+  }
+
+  .country-select .country-select__placeholder {
+    @apply text-muted-foreground;
+  }
+
+  .country-select--error .country-select__control {
+    @apply border-destructive;
+  }
+
+  .country-select--error .country-select__control--is-focused {
+    @apply ring-destructive;
   }
 }

@@ -1,10 +1,30 @@
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
-import { mainNav } from '@/constants/data';
+import { NavigationItem } from '@/constants/navigation';
+import { LayoutDashboard, Users } from 'lucide-react';
 
-const findDefaultRoute = (items: typeof mainNav): string => {
+// Default navigation items with a default route
+const defaultNav: NavigationItem[] = [
+  {
+    title: 'Overview',
+    href: '/dashboard/overview',
+    icon: LayoutDashboard,
+    isDefault: true
+  },
+  {
+    title: 'Clients',
+    href: '/dashboard/clients',
+    icon: Users
+  }
+];
+
+const findDefaultRoute = (items: NavigationItem[] = defaultNav): string => {
+  if (!items?.length) return '/dashboard/overview';
+
   for (const item of items) {
-    if (item.isDefault) return item.url;
+    if ('isDefault' in item && item.isDefault && item.href) {
+      return item.href;
+    }
     if (item.items) {
       const defaultInChildren = findDefaultRoute(item.items);
       if (defaultInChildren) return defaultInChildren;
@@ -17,9 +37,9 @@ export default async function Dashboard() {
   const session = await auth();
 
   if (!session?.user) {
-    return redirect('/');
-  } else {
-    const defaultRoute = findDefaultRoute(mainNav);
-    redirect(defaultRoute);
+    redirect('/');
   }
+
+  const defaultRoute = findDefaultRoute(defaultNav);
+  redirect(defaultRoute);
 }

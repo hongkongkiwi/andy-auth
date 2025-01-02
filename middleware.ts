@@ -1,17 +1,18 @@
-// Protecting routes with next-auth
-// https://next-auth.js.org/configuration/nextjs#middleware
-// https://nextjs.org/docs/app/building-your-application/routing/middleware
-
-import NextAuth from 'next-auth';
-import authConfig from './auth.config';
-
-const { auth } = NextAuth(authConfig);
+import { auth } from '@/lib/auth';
+import { guardRoute } from '@/lib/auth/guards';
 
 export default auth((req) => {
-  if (!req.auth) {
-    const url = req.url.replace(req.nextUrl.pathname, '/');
-    return Response.redirect(url);
-  }
+  const { nextUrl } = req;
+  const isLoggedIn = !!req.auth;
+  return guardRoute(isLoggedIn, nextUrl, req);
 });
 
-export const config = { matcher: ['/dashboard/:path*'] };
+export const config = {
+  matcher: [
+    '/dashboard/:path*',
+    '/settings/:path*',
+    '/workspace/:path*',
+    '/auth/:path*',
+    '/api/((?!auth).)*'
+  ]
+};

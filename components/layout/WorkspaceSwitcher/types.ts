@@ -1,41 +1,11 @@
-import type { LucideIcon } from 'lucide-react';
+import type { RouterOutputs } from '@/lib/trpc/client';
 import type { NavigationItem } from '@/components/layout/Navigation/types';
 
-type BaseWorkspaceLogo = {
-  backgroundColor: string;
-  textColor?: string;
-};
+export type WorkspaceFromAPI = RouterOutputs['workspaces']['list'][0];
 
-type IconWorkspaceLogo = BaseWorkspaceLogo & {
-  type: 'icon';
-  icon: LucideIcon;
-};
-
-type ImageWorkspaceLogo = BaseWorkspaceLogo & {
-  type: 'image';
-  imageUrl: string;
-  alt?: string;
-};
-
-export type WorkspaceLogo = IconWorkspaceLogo | ImageWorkspaceLogo;
-
-export type Workspace = {
-  id: string;
-  name: string;
-  logo: WorkspaceLogo;
-  plan: string;
-  style?: {
-    transitionColor?: string;
-    transitionTime?: number;
-  }
-};
-
-export type WorkspaceContextType = {
-  selectedWorkspace: Workspace | null;
-  setSelectedWorkspace: (workspace: Workspace | null) => void;
-  isTransitioning: boolean;
-  setIsTransitioning: (value: boolean) => void;
-  workspaceNavItems: NavigationItem[];
-  setWorkspaceNavItems: (items: NavigationItem[]) => void;
-  workspace: boolean;
-};
+export interface WorkspaceContextType {
+  selectedWorkspace: WorkspaceFromAPI | null;
+  setSelectedWorkspace: (workspace: WorkspaceFromAPI | null) => void;
+  handleWorkspaceSwitch: (workspace: WorkspaceFromAPI) => Promise<void>;
+  isLoading: boolean;
+}

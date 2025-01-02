@@ -14,8 +14,8 @@ type ProvidersProps = {
  */
 export const Providers: React.FC<ProvidersProps> = ({ session, children }) => {
   return (
-    <ThemeProvider>
-      <SessionProvider session={session}>{children}</SessionProvider>
-    </ThemeProvider>
+    <SessionProvider session={session}>
+      <ThemeProvider>{children}</ThemeProvider>
+    </SessionProvider>
   );
 };

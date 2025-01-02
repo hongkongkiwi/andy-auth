@@ -1,61 +1,94 @@
-import { LucideIcon } from 'lucide-react';
-import { type IconsType } from '@/types';
+import { type IconsType } from '@/components/ui/icons';
 
-// Base navigation item types
+// Base Types
+/** Base navigation item interface */
 export interface BaseNavigationItem {
+  /** Unique identifier for the item */
   id: string;
+  /** Type of navigation item */
+  type: NavigationItemType;
+  /** Display title */
   title: string;
-  type: 'item' | 'header' | 'group';
-  icon?: IconsType | LucideIcon;
-  disabled?: boolean;
-  className?: string;
-  iconClassName?: string;
-  external?: boolean;
 }
 
-// Navigation link type
-export type NavigationLink = Omit<BaseNavigationItem, 'type'> & {
+export type NavigationItemType = 'item' | 'separator' | 'group' | 'header';
+
+// Navigation Item Types
+export interface NavigationLink extends BaseNavigationItem {
   type: 'item';
   href: string;
-  badge?: string | number;
-  tooltip?: string;
-  onClick?: (e: React.MouseEvent<HTMLElement>) => void;
-};
+  icon?: IconsType;
+  disabled?: boolean;
+}
 
-// Navigation header type
-export type NavigationHeader = Omit<BaseNavigationItem, 'type'> & {
-  type: 'header';
-};
-
-// Navigation group type
-export type NavigationGroup = Omit<BaseNavigationItem, 'type'> & {
+export interface NavigationGroupType extends BaseNavigationItem {
   type: 'group';
   items: NavigationItem[];
   collapsible?: boolean;
-  defaultCollapsed?: boolean;
-};
-
-// Add support for component items
-export interface NavigationComponentItem {
-  type: 'component';
-  id: string;
-  component: React.ReactNode;
 }
 
-// Update NavigationItem type to include component items
-export type NavigationItem = 
-  | NavigationHeader 
-  | NavigationGroup 
-  | NavigationLink 
-  | NavigationComponentItem;
+export interface NavigationHeaderType extends BaseNavigationItem {
+  type: 'header';
+  description?: string;
+}
 
-// Props for navigation components
+export interface NavigationSeparator extends Omit<BaseNavigationItem, 'title'> {
+  type: 'separator';
+}
+
+export type NavigationItem =
+  | NavigationLink
+  | NavigationGroupType
+  | NavigationHeaderType
+  | NavigationSeparator;
+
+// Component Props Types
 export interface NavigationProps {
   items: NavigationItem[];
   label?: string;
   className?: string;
-  isCollapsed: boolean;
-  onNavigate?: (item: NavigationItem) => void;
+  isCollapsed?: boolean;
   showIcons?: boolean;
   iconSize?: number;
-} 
+  onNavigate?: () => void;
+}
+
+export interface NavigationMenuItemProps {
+  item: NavigationLink;
+  level?: number;
+  isCollapsed?: boolean;
+  showIcons?: boolean;
+  iconSize?: number;
+}
+
+export interface NavigationGroupProps {
+  item: NavigationGroupType;
+  className?: string;
+  isCollapsed?: boolean;
+  showIcons?: boolean;
+  iconSize?: number;
+}
+
+export interface NavigationHeaderProps {
+  item: NavigationHeaderType;
+  className?: string;
+  isCollapsed?: boolean;
+}
+
+export type NavigationItemRendererProps = Omit<
+  NavigationProps,
+  'items' | 'label'
+> & {
+  item: NavigationItem;
+};
+
+// Hook Return Types
+export interface UseNavigationReturn {
+  isItemActive: (item: NavigationItem) => boolean;
+  pathname: string | null;
+}
+
+export interface UseCollapsedStateReturn {
+  isCollapsed: boolean;
+  toggleCollapse: () => void;
+}

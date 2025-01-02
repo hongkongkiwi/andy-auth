@@ -1,0 +1,82 @@
+// Import all models
+import "general.zmodel"
+import "auth.zmodel"
+import "workspace.zmodel"
+import "device.zmodel"
+import "patrol.zmodel"
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["public", "development", "platform_auth", "workspace_client"]
+}
+generator prismaClient {
+  provider = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+  output   = "../node_modules/.prisma/client"
+}
+
+// https://github.com/onozaty/prisma-db-comments-generator
+generator dbComments {
+  provider = "prisma-db-comments-generator"
+}
+
+plugin zenstackPrisma {
+  provider = '@core/prisma'
+  output = '../prisma/schema.prisma'
+  format = true
+}
+
+plugin zenstackHooks {
+  provider = '@zenstackhq/tanstack-query'
+  target = 'react'
+  version = 'v5'
+  output = "../lib/zenstack/hooks"
+}
+
+plugin trpc {
+  provider = '@zenstackhq/trpc'
+  output = '../lib/zenstack/trpc'
+  generateClientHelpers = 'next'
+  version = 'v11'
+  importCreateRouter = "../lib/zenstack/trpc"
+  importProcedure = "../lib/zenstack/trpc"
+  zodSchemasImport = '../lib/zenstack/zod'
+}
+
+plugin zenstackZzod {
+  provider = '@core/zod'
+  compile = true
+  output   = '../lib/zenstack/zod'
+}
+
+plugin zenstackEnhancer {
+  provider = '@core/enhancer'
+} 
+
+// Development schema
+// generator jsFrontend {
+//   provider = "prisma-frontend"
+// }
+
+// // https://github.com/luisrudge/prisma-generator-fake-data
+// generator fakeData {
+//   provider = "prisma-generator-fake-data"
+//   output   = "../types/fake-data.ts"
+// }
+
+// https://github.com/aravindanve/prisma-grapher?tab=readme-ov-file
+generator erdDiagram {
+  provider              = "prisma-grapher"
+  output                = "../prisma/docs/ERD.svg"
+  disabled              = false
+  ignoreEnums           = false
+  title                 = "PatrolSix Schema"
+  lineColor             = "#004cff"
+  headerBackgroundColor = "#bacefc"
+  headerForegroundColor = "black"
+  bodyBackgroundColor   = "white"
+  bodyBackgroundColor2  = "#e8efff"
+  bodyForegroundColor   = "black"
+  typeForegroundColor   = "#4f83ff"
+}

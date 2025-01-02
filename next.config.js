@@ -12,8 +12,7 @@ const nextConfig = {
         hostname: 'api.slingacademy.com',
         port: ''
       }
-    ],
-    domains: ['avatar.vercel.sh'],
+    ]
   },
   transpilePackages: ['geist']
 };

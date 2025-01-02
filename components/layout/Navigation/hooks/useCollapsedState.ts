@@ -1,8 +1,11 @@
 import { useState, useCallback, useEffect } from 'react';
+import { type UseCollapsedStateReturn } from '../types';
 
 const STORAGE_KEY = 'navigation:collapsed';
 
-export const useCollapsedState = (defaultCollapsed = false) => {
+export const useCollapsedState = (
+  defaultCollapsed = false
+): UseCollapsedStateReturn => {
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
 
   useEffect(() => {
@@ -17,7 +20,7 @@ export const useCollapsedState = (defaultCollapsed = false) => {
   }, []);
 
   const toggleCollapse = useCallback(() => {
-    setIsCollapsed(prev => {
+    setIsCollapsed((prev) => {
       const newState = !prev;
       try {
         localStorage.setItem(STORAGE_KEY, String(newState));
@@ -32,4 +35,4 @@ export const useCollapsedState = (defaultCollapsed = false) => {
     isCollapsed,
     toggleCollapse
   };
-}; 
+};

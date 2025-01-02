@@ -1,15 +1,20 @@
 'use client';
 
-import { ThemeProvider as NextThemesProvider } from 'next-themes';
+import {
+  ThemeProvider as NextThemesProvider,
+  useTheme as useNextTheme
+} from 'next-themes';
 import { type ThemeProviderProps } from 'next-themes/dist/types';
+
+export const useTheme = useNextTheme;
 
 /**
  * Application-wide theme provider that handles theme switching and system theme detection
  */
 export const ThemeProvider = ({
   children,
-  attribute = "class",
-  defaultTheme = "system",
+  attribute = 'class',
+  defaultTheme = 'system',
   enableSystem = true,
   ...props
 }: ThemeProviderProps) => {

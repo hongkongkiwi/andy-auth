@@ -1,0 +1,71 @@
+/// Contact person for a client location
+type ContactPerson {
+  /// Full name of the contact person
+  name String
+  /// Email address of the contact person
+  emailAddress String? @email(message: "Must be a valid email address")
+  /// Phone number of the contact person in international format (+XXXXXXXXXXX)
+  phoneNumber String? @regex('^\\+?[0-9]{10,15}$', message: "Must be a valid phone number")
+}
+
+/// Google Places autocomplete result
+type GooglePlacesAutocomplete {
+  placeId String?
+  formattedAddress String?
+  latitude Float?
+  longitude Float?
+  streetNumber String?
+  route String?
+  locality String?
+  administrativeAreaLevel1 String?
+  administrativeAreaLevel2 String?
+  country String?
+  postalCode String?
+}
+
+/// Coordinates for a checkpoint
+type CheckpointCoordinates {
+  latitude Float?
+  longitude Float?
+}
+
+enum GeoFenceType {
+  CIRCLE
+  POLYGON
+
+  @@map("geo_fence_type_enum")
+  @@schema("workspace_client")
+}
+
+/// GeoFence for a patrol route
+/// Can be either a circle (center point + radius) or a polygon (series of points)
+type GeoFence {
+  type GeoFenceType @default("POLYGON")
+  
+  // For circle type
+  centerLatitude Float?
+  centerLongitude Float?
+  radiusMeters Float?
+
+  // For polygon type
+  vertexLatitudes Float[]?
+  vertexLongitudes Float[]?
+
+  // Metadata
+  name String?
+  description String?
+}
+
+// Define the Branding type
+type Branding {
+  displayName String?
+  logo String?
+  colors Json?
+  favicon String?
+  tagline String?
+  fontFamily String?
+  description String?
+  metadata Json?
+  theme String?
+  socialLinks Json?
+}
