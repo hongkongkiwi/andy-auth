@@ -13,6 +13,7 @@ Frameworks and Libraries:
   - React Hook Form + Zod
   - Tailwind CSS
   - Lucide Icons
+  - Better-Auth (Authentication)
 
 Component Architecture:
   - Use arrow function components with explicit type interfaces
@@ -146,10 +147,11 @@ References:
     - Next.js App Router: https://nextjs.org/docs/app
     - Shadcn UI: https://ui.shadcn.com
     - Zustand: https://docs.pmnd.rs/zustand
+    - Better-Auth: https://www.better-auth.com
 
   Zenstack Imports:
     - '@zenstackhq/runtime/models': Types, enums
     - '@zenstack/zod/models': Zod schemas
     - '@zenstack/ui/forms': Form generation
     - '@zenstack/ui/crud': CRUD operations
-    - '@zenstack/auth': Authentication
+    - 'better-auth': Authentication

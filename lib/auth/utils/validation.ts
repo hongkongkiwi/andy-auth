@@ -1,22 +1,11 @@
-import { AuthError, AuthErrorCode } from '../errors';
-import { AUTH_ERROR_STATUS_CODES } from '../errors/status-codes';
-import type { AdapterUser } from '../types/adapter';
+import { passwordSchema, phoneSchema } from '../schemas/validation';
 
-export const validateUserData = (data: Partial<AdapterUser>): boolean => {
-  if (!data.email) {
-    throw new AuthError(AuthErrorCode.INVALID_USER_DATA, {
-      message: 'Email is required',
-      statusCode: AUTH_ERROR_STATUS_CODES.INVALID_USER_DATA
-    });
-  }
+export const validatePassword = (password: string): boolean => {
+  const result = passwordSchema.safeParse(password);
+  return result.success;
+};
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(data.email)) {
-    throw new AuthError(AuthErrorCode.INVALID_USER_DATA, {
-      message: `Invalid email format: ${data.email}`,
-      statusCode: AUTH_ERROR_STATUS_CODES.INVALID_USER_DATA
-    });
-  }
-
-  return true;
+export const validatePhone = (phone: string): boolean => {
+  const result = phoneSchema.safeParse(phone);
+  return result.success;
 };

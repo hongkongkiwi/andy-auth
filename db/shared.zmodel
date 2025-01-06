@@ -1,0 +1,100 @@
+// Shared types
+type ContactPerson {
+  name String @length(1, 100)
+  emailAddress String? @email
+  phoneNumber String? @regex('^\\+[1-9][0-9]{10,14}$')
+  title String? @length(1, 100)
+  department String? @length(1, 100)
+}
+
+type GooglePlacesAutocomplete {
+  placeId String
+  formattedAddress String
+  latitude Float
+  longitude Float
+  streetNumber String?
+  route String?
+  locality String?
+  administrativeAreaLevel1 String?
+  administrativeAreaLevel2 String?
+  country String
+  postalCode String?
+  raw Json?
+}
+
+type UserSettings {
+  theme String @default("system") @regex('^(light|dark|system)$')
+  locale String @default("en-US") @regex('^[a-z]{2}-[A-Z]{2}$')
+  timezone String @default("UTC")
+  dateFormat String @default("YYYY-MM-DD") @regex('^(YYYY-MM-DD|MM/DD/YYYY|DD/MM/YYYY)$')
+  tablePageSize Int @default(10) @gte(5) @lte(100)
+  navigationCollapsed Boolean @default(false)
+  navigationFavorites String[]
+}
+
+/// Emergency contact information
+type EmergencyContactInfo {
+  name String
+  relationship String
+  phoneNumber String
+  emailAddress String? @email
+  address Json?
+}
+
+/// User preferences for platform customization
+type UserPreferences {
+  dashboard Json
+  communication Json
+  accessibility Json
+}
+
+/// Essential device information for login session tracking
+type DeviceInfo {
+  // Core identifiers
+  deviceId String? @length(1, 100)    // Generated fingerprint or session identifier
+  ipv4Address String? @regex('^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$')
+  ipv6Address String? @regex('^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$')
+
+  // Basic device classification
+  deviceType String? @regex('^(desktop|mobile|tablet|unknown)$')
+  
+  // Core browser info
+  browser String? @length(1, 50)      // e.g., "Chrome", "Firefox", "Safari"
+  browserVersion String? @length(1, 20)
+  os String? @length(1, 50)           // e.g., "Windows", "iOS", "Android"
+  osVersion String? @length(1, 20)
+
+  // Location data (if available)
+  geoLocation Json?                   // Country, city, etc. from IP
+}
+
+/// Session metadata information
+type SessionMetadata {
+  platform String?
+  browser String?
+  os String?
+}
+
+/// File storage metadata
+type StorageMetadata {
+  originalFilename String?
+  mimeType String?
+  size Int? @gt(0, "File size must be greater than 0")
+  thumbnailUrl String? @url
+  metadata Json?
+}
+
+// Enums
+/// Status options for entities like workspaces, clients, and locations
+enum EntityStatus {
+  /// Fully operational
+  ACTIVE @map("active")
+  /// Permanently disabled
+  DISABLED @map("disabled")
+  /// Marked for deletion
+  DELETED @map("deleted")
+
+  @@map("entity_status_enum")
+  @@schema("workspace")
+}
+

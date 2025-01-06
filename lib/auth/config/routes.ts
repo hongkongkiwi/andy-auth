@@ -1,81 +1,91 @@
-/**
- * Auth Route Configuration
- *
- * Defines and manages authentication-related routes and patterns including:
- * - Public routes (login, register, etc.)
- * - Protected routes requiring authentication
- * - Route matching patterns for middleware
- * - Redirect paths for auth flows
- * - Utility functions for route validation
- *
- * @module auth/config/routes
- */
+export const ROUTES = {
+  BASE_URL: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
 
-// Base paths for different sections of the application
-const BASE_PATHS = {
-  AUTH: '/auth',
-  DASHBOARD: '/dashboard',
-  SETTINGS: '/settings',
-  WORKSPACE: '/workspace',
-  API_AUTH: '/api/auth'
-} as const;
-
-export const AUTH_ROUTES = {
-  public: {
-    login: `${BASE_PATHS.AUTH}/login`,
-    register: `${BASE_PATHS.AUTH}/register`,
-    verify: `${BASE_PATHS.AUTH}/verify`,
-    error: `${BASE_PATHS.AUTH}/error`
+  // Authentication Routes
+  SIGN_IN: {
+    BASE: '/sign-in' as const,
+    EMAIL: '/sign-in/email' as const,
+    PASSWORD: '/sign-in/password' as const,
+    MAGIC_LINK: '/sign-in/magic-link' as const,
+    PHONE: '/sign-in/phone' as const,
+    MFA: '/sign-in/mfa' as const
   },
-  protected: {
-    dashboard: BASE_PATHS.DASHBOARD,
-    settings: BASE_PATHS.SETTINGS,
-    workspace: BASE_PATHS.WORKSPACE
+
+  SIGN_UP: {
+    BASE: '/sign-up' as const,
+    EMAIL: '/sign-up/email' as const,
+    PASSWORD: '/sign-up/password' as const,
+    VERIFY: '/sign-up/verify' as const,
+    COMPLETE: '/sign-up/complete' as const
+  },
+
+  AUTH: {
+    BASE: '/auth' as const,
+    FORGOT_PASSWORD: '/auth/forgot-password' as const,
+    RESET_PASSWORD: '/auth/reset-password' as const,
+    VERIFY_EMAIL: '/auth/verify-email' as const,
+    VERIFY_PHONE: '/auth/verify-phone' as const,
+    CHANGE_EMAIL: '/auth/change-email' as const,
+    CHANGE_PASSWORD: '/auth/change-password' as const,
+    DELETE_ACCOUNT: '/auth/delete-account' as const,
+    ERROR: '/auth/error' as const,
+    CALLBACK: '/auth/callback' as const
+  },
+
+  // Protected Routes
+  PROTECTED: {
+    DASHBOARD: '/dashboard' as const,
+    SETTINGS: {
+      BASE: '/settings' as const,
+      PROFILE: '/settings/profile' as const,
+      SECURITY: '/settings/security' as const,
+      NOTIFICATIONS: '/settings/notifications' as const,
+      DEVICES: '/settings/devices' as const,
+      SESSIONS: '/settings/sessions' as const,
+      MFA: '/settings/mfa' as const
+    },
+    WORKSPACE: {
+      BASE: '/workspace' as const,
+      SETTINGS: '/workspace/settings' as const,
+      MEMBERS: '/workspace/members' as const,
+      BILLING: '/workspace/billing' as const
+    }
+  },
+
+  // API Routes
+  API: {
+    BASE: '/api' as const,
+    AUTH: {
+      BASE: '/api/auth' as const,
+      SIGN_IN: '/api/auth/sign-in' as const,
+      SIGN_UP: '/api/auth/sign-up' as const,
+      SIGN_OUT: '/api/auth/sign-out' as const,
+      SESSION: '/api/auth/session' as const,
+      VERIFY: '/api/auth/verify' as const,
+      RESET: '/api/auth/reset' as const,
+      MFA: '/api/auth/mfa' as const
+    },
+    WEBHOOKS: {
+      BASE: '/api/webhooks' as const,
+      PROTECTED: '/api/webhooks/protected' as const
+    },
+    INTERNAL: {
+      BASE: '/api/internal' as const,
+      PROTECTED: '/api/internal/protected' as const
+    },
+    HEALTH: '/api/health' as const
   }
 } as const;
 
-// Match patterns for middleware route protection
-export const PROTECTED_PATTERNS = [
-  `${BASE_PATHS.DASHBOARD}/:path*`,
-  `${BASE_PATHS.SETTINGS}/:path*`,
-  `${BASE_PATHS.WORKSPACE}/:path*`
-] as const;
+// Helper function to check if a path is an auth path
+export const isAuthPath = (pathname: string): boolean => {
+  const authPaths = [
+    ...Object.values(ROUTES.SIGN_IN),
+    ...Object.values(ROUTES.SIGN_UP),
+    ...Object.values(ROUTES.AUTH)
+  ].filter((path) => typeof path === 'string');
 
-// Public patterns that should bypass auth checks
-export const PUBLIC_PATTERNS = [
-  `${BASE_PATHS.AUTH}/:path*`,
-  `${BASE_PATHS.API_AUTH}/:path*`
-] as const;
+  return authPaths.some((path) => pathname.startsWith(path));
+};
 
-// Common redirects
-export const DEFAULT_LOGIN_REDIRECT = AUTH_ROUTES.protected.dashboard;
-export const DEFAULT_ERROR_REDIRECT = AUTH_ROUTES.public.error;
-
-/**
- * Creates a RegExp pattern for matching route paths
- * @param pattern - Route pattern with optional :path* wildcard
- * @returns RegExp for matching paths
- */
-const createPathMatcher = (pattern: string): RegExp =>
-  new RegExp(`^${pattern.replace(':path*', '.*')}$`);
-
-/**
- * Checks if a given path is a protected route
- * @param path - URL pathname to check
- * @returns boolean indicating if route requires authentication
- */
-export const isProtectedRoute = (path: string): boolean =>
-  PROTECTED_PATTERNS.some((pattern) => createPathMatcher(pattern).test(path));
-
-/**
- * Checks if a given path is a public route
- * @param path - URL pathname to check
- * @returns boolean indicating if route is publicly accessible
- */
-export const isPublicRoute = (path: string): boolean =>
-  PUBLIC_PATTERNS.some((pattern) => createPathMatcher(pattern).test(path));
-
-// Type exports
-export type AuthRoutes = typeof AUTH_ROUTES;
-export type ProtectedPatterns = (typeof PROTECTED_PATTERNS)[number];
-export type PublicPatterns = (typeof PUBLIC_PATTERNS)[number];
+export default ROUTES;

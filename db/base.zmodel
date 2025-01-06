@@ -1,0 +1,30 @@
+/// Base model with ID field
+abstract model BaseModel {
+  id String @id @default(cuid(2))
+}
+
+/// Adds audit fields to a model
+abstract model AuditableModel {
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  lastModifiedBy String? @map("last_modified_by")
+  deletedAt DateTime? @map("deleted_at")
+  deletedBy String? @map("deleted_by")
+
+  @@index([deletedAt])
+}
+
+/// Base model for user permissions
+// abstract model UserPermissionBase extends AuditableModel {
+//   userId String @unique @map("user_id")
+// }
+
+/// Workspace schema identifier
+abstract model SchemaWorkspace { 
+  @@schema("workspace") 
+}
+
+/// Auth schema identifier
+abstract model SchemaAuth { 
+  @@schema("auth") 
+}

@@ -1,6 +1,6 @@
 import '@/styles/globals.css';
 import { Inter } from 'next/font/google';
-import { AuthProvider } from '@/app/auth/_components';
+import { AuthProvider } from '@/lib/auth/components/auth-provider';
 
 export const runtime = 'nodejs';
 

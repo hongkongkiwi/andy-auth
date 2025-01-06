@@ -41,4 +41,6 @@ export interface Client {
   status: 'active' | 'inactive';
 }
 
+export type WorkspaceVisibility = 'full' | 'limited' | 'none';
+
 export type { WorkspaceStatus, WorkspacePermissionType, ClientPermissionType };

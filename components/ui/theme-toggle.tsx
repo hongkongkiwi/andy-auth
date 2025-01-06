@@ -1,53 +1,34 @@
 'use client';
 
-import * as React from 'react';
-import { Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu';
+import { Button } from './button';
+import { Moon, Sun } from 'lucide-react';
+import { PermissionType } from '@prisma/client';
+import { hasPermission } from '@/components/layout/Navigation/utils';
+import { CAN_MANAGE_UI } from '@/lib/constants/permissions';
 
-export interface ThemeToggleProps
-  extends React.HTMLAttributes<HTMLDivElement> {}
+interface ThemeToggleProps {
+  permissions: { type: PermissionType }[];
+}
 
-export const ThemeToggle = React.forwardRef<HTMLDivElement, ThemeToggleProps>(
-  ({ className, ...props }, ref) => {
-    const { setTheme } = useTheme();
+export const ThemeToggle = ({ permissions }: ThemeToggleProps) => {
+  const { setTheme, theme } = useTheme();
 
-    return (
-      <div ref={ref} {...props}>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-              <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-              <span className="sr-only">Toggle theme</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" forceMount>
-            <DropdownMenuItem onSelect={() => setTheme('light')}>
-              <Sun className="mr-2 h-4 w-4" />
-              <span>Light</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => setTheme('dark')}>
-              <Moon className="mr-2 h-4 w-4" />
-              <span>Dark</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => setTheme('system')}>
-              <span className="mr-2">💻</span>
-              <span>System</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-    );
-  }
-);
+  const canChangeTheme = permissions.some((p) =>
+    CAN_MANAGE_UI.includes(p.type)
+  );
 
-ThemeToggle.displayName = 'ThemeToggle';
+  if (!canChangeTheme) return null;
 
-export default ThemeToggle;
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+    >
+      <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+      <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+      <span className="sr-only">Toggle theme</span>
+    </Button>
+  );
+};

@@ -1,0 +1,16 @@
+model Post {
+  id String @id @default(cuid())
+  title String
+  content String
+  published Boolean @default(false)
+  author User @relation(fields: [authorId], references: [id])
+  authorId String
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+  workspaceId String
+
+  // Zenstack permissions
+  @@allow('read', auth() != null && workspace.members?[userId == auth().id])
+  @@allow('create', auth() != null && workspace.members?[userId == auth().id && role in ['EDITOR', 'ADMIN']])
+  @@allow('update', auth() != null && (authorId == auth().id || workspace.members?[userId == auth().id && role == 'ADMIN']))
+  @@allow('delete', auth() != null && workspace.members?[userId == auth().id && role == 'ADMIN'])
+} 

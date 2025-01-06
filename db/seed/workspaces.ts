@@ -1,49 +1,74 @@
-import { PrismaClient, Workspace, WorkspaceStatus } from '@prisma/client';
+import { PrismaClient, Workspace } from '@prisma/client';
 import { faker } from '@faker-js/faker';
-import { SeedOptions, DEFAULT_COUNTS } from './types';
+import { createId } from '@paralleldrive/cuid2';
 
-const generateCompanyName = () => {
-  const patterns = [
-    () =>
-      `${faker.company.buzzNoun()} ${faker.company.buzzAdjective()} ${faker.company.buzzNoun()}`,
-    () => `${faker.person.lastName()} & Associates`,
-    () => `${faker.company.name()}`,
-    () => `${faker.person.lastName()} ${faker.company.buzzNoun()}`,
-    () => `${faker.location.city()} ${faker.company.buzzNoun()}`
-  ];
+interface SeedWorkspacesParams {
+  count: number;
+}
 
-  return faker.helpers.arrayElement(patterns)();
-};
+const generateSettings = () => ({
+  theme: faker.helpers.arrayElement(['light', 'dark', 'system']),
+  table: {
+    pageSize: faker.number.int({ min: 10, max: 100 }),
+    columnVisibility: {}
+  },
+  navigation: {
+    collapsed: false,
+    favorites: [],
+    recentItems: []
+  },
+  notifications: {
+    email: true,
+    push: true,
+    inApp: true
+  }
+});
+
+const generateAddress = () => ({
+  placeId: createId(),
+  formattedAddress: faker.location.streetAddress(true),
+  latitude: Number(faker.location.latitude()),
+  longitude: Number(faker.location.longitude()),
+  raw: null
+});
 
 export const seedWorkspaces = async (
   prisma: PrismaClient,
-  options: SeedOptions = {}
+  { count }: SeedWorkspacesParams
 ): Promise<Workspace[]> => {
-  const workspaceCount =
-    options.workspaceCount ?? DEFAULT_COUNTS.workspaceCount;
+  const workspaces: Workspace[] = [];
 
-  return Promise.all(
-    Array.from({ length: workspaceCount }, async () => {
-      const name = generateCompanyName();
-      return prisma.workspace.create({
+  await Promise.all(
+    Array.from({ length: count }, async () => {
+      const name = faker.company.name();
+      const slug = faker.helpers.slugify(name).toLowerCase();
+
+      const workspace = await prisma.workspace.create({
         data: {
-          displayName: name,
-          companyName: name,
-          slug: faker.helpers.slugify(name).toLowerCase(),
-          timezone: faker.helpers.arrayElement([
-            'America/New_York',
-            'America/Los_Angeles',
-            'Europe/London',
-            'Asia/Singapore'
-          ]),
-          companyEmail: faker.internet.email().toLowerCase(),
-          companyWebsite: faker.internet.url(),
-          companyPhoneNumber: `+${faker.string.numeric(11)}`,
-          workspaceStatus: WorkspaceStatus.ACTIVE,
-          notes: faker.lorem.paragraph(),
-          imageUrl: faker.image.url()
+          id: createId(),
+          name,
+          slug,
+          description: faker.company.catchPhrase(),
+          logoUrl: faker.image.urlLoremFlickr({ category: 'business' }),
+          status: 'ACTIVE',
+          settings: generateSettings(),
+          address: generateAddress(),
+          maxClients: faker.number.int({ min: 5, max: 50 }),
+          maxLocationsPerClient: faker.number.int({ min: 3, max: 20 }),
+          features: faker.helpers.arrayElements([
+            'incidents',
+            'analytics',
+            'reports',
+            'integrations',
+            'api_access'
+          ])
         }
       });
+
+      workspaces.push(workspace);
+      return workspace;
     })
   );
+
+  return workspaces;
 };

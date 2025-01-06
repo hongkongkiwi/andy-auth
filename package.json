@@ -26,7 +26,7 @@
     "seed": "tsx db/seed/index.ts"
   },
   "dependencies": {
-    "@auth/core": "0.37.4",
+    "@better-fetch/fetch": "^1.1.12",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/modifiers": "^9.0.0",
     "@dnd-kit/sortable": "^10.0.0",
@@ -59,7 +59,7 @@
     "@radix-ui/react-toast": "^1.2.4",
     "@radix-ui/react-tooltip": "^1.1.6",
     "@react-google-maps/api": "^2.20.5",
-    "@tanstack/react-query": "^5.62.11",
+    "@tanstack/react-query": "^5.62.15",
     "@tanstack/react-table": "^8.20.6",
     "@trpc/client": "11.0.0-rc.657",
     "@trpc/next": "11.0.0-rc.657",
@@ -72,6 +72,8 @@
     "@zenstackhq/runtime": "^2.10.2",
     "autoprefixer": "10.4.20",
     "bcrypt-mini": "^1.0.1",
+    "better-auth": "^1.1.10",
+    "better-fetch": "^1.1.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.4",
@@ -83,12 +85,12 @@
     "mantine-form-zod-resolver": "^1.1.0",
     "match-sorter": "^8.0.0",
     "next": "^14.2.22",
-    "next-auth": "5.0.0-beta.25",
     "next-themes": "^0.4.4",
     "nextjs-toploader": "^3.7.15",
     "nuqs": "^2.3.0",
     "pg": "^8.13.1",
     "postcss": "8.4.49",
+    "pretty-ms": "^9.2.0",
     "react": "^18.3.1",
     "react-day-picker": "^9.5.0",
     "react-dom": "^18.3.1",
@@ -112,7 +114,7 @@
     "tailwindcss": "^3.4.17",
     "tailwindcss-animate": "^1.0.7",
     "typescript": "5.7.2",
-    "uuid": "^11.0.3",
+    "uuid": "^11.0.4",
     "zenstack-ui": "^0.0.22",
     "zod": "^3.24.1",
     "zustand": "^5.0.2"
@@ -120,6 +122,7 @@
   "devDependencies": {
     "@faker-js/faker": "^9.3.0",
     "@onozaty/prisma-db-comments-generator": "^1.0.2",
+    "@paralleldrive/cuid2": "^2.2.2",
     "@prisma/client": "^6.1.0",
     "@types/google.maps": "^3.58.1",
     "@types/pg": "^8.11.10",
@@ -140,10 +143,5 @@
     "tsx": "^4.19.2",
     "zenstack": "^2.10.2",
     "zenstack-markdown": "^0.2.4"
-  },
-  "pnpm": {
-    "overrides": {
-      "@auth/core": "0.37.4"
-    }
   }
 }

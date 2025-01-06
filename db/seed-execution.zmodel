@@ -1,0 +1,27 @@
+import "./base.zmodel"
+
+enum SeedExecutionStatus {
+  RUNNING @map("running")
+  COMPLETED @map("completed")
+  FAILED @map("failed")
+
+  @@map("seed_execution_status")
+  @@schema("development")
+}
+
+/// Tracks database seed executions for development and testing
+model SeedExecution extends BaseModel {
+  seedName String @length(1, 100) @map("seed_name")
+  executedAt DateTime @default(now()) @map("executed_at")
+  completedAt DateTime? @map("completed_at")
+  status SeedExecutionStatus @default(RUNNING)
+  error String? @length(1, 1000)
+  metadata Json?
+
+  @@unique([seedName, executedAt])
+  @@map("seed_execution")
+  @@schema("development")
+
+  @@index([status])
+  @@index([seedName, status])
+}

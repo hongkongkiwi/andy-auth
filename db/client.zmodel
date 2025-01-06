@@ -1,0 +1,40 @@
+import "./base.zmodel"
+import "./shared.zmodel"
+import "./workspace.zmodel"
+import "./auth.zmodel"
+import "./location.zmodel"
+import "./incident.zmodel"
+
+/// Client organization within a workspace
+model Client extends BaseModel,AuditableModel, SchemaWorkspace {
+  /// Display name of the client
+  name String @length(1, 100) @regex('^[\\w\\s-]+$')
+  /// Optional client description
+  description String? @length(0, 500)
+  /// URL to client logo image
+  logoUrl String? @map("logo_url")
+  /// Current client status
+  status EntityStatus @default(ACTIVE)
+  /// Client configuration settings
+  settings UserSettings? @json
+  /// Physical address information
+  address GooglePlacesAutocomplete? @json
+
+  // Relationships
+  /// Parent workspace
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceId String @map("workspace_id")
+  /// Physical locations
+  locations Location[]
+  permissions Permission[] @relation("ClientPermissions")
+
+  /// Maximum number of locations allowed
+  maxLocations Int? @map("max_locations") @lte(1000)
+
+  /// Incidents
+  incidents Incident[]
+
+  @@index([workspaceId])
+  @@map("client")
+  @@allow('all', true)
+}

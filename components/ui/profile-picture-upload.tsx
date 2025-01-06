@@ -15,6 +15,9 @@ import Cropper from 'react-easy-crop';
 import type { Point, Area } from '@/types/cropper';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Slider } from '@/components/ui/slider';
+import { PermissionType } from '@prisma/client';
+import { hasPermission } from '@/components/layout/Navigation/utils';
+import { CAN_MANAGE_UI } from '@/lib/constants/permissions';
 
 interface ProfilePictureUploadProps {
   open: boolean;
@@ -22,15 +25,47 @@ interface ProfilePictureUploadProps {
   onUpload: (file: File, crop: Area) => Promise<void>;
   aspectRatio?: number;
   initialTab?: 'upload' | 'camera';
+  permissions: { type: PermissionType }[];
 }
 
-export function ProfilePictureUpload({
+interface UploadResponse {
+  file: {
+    objectKey: string;
+    objectBucket: string;
+    mimeType: string;
+    sizeInBytes: number;
+  };
+}
+
+const uploadImage = async (file: File, crop: Area): Promise<UploadResponse> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('crop', JSON.stringify(crop));
+
+  const response = await fetch('/api/storage/upload', {
+    method: 'POST',
+    body: formData
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to upload image');
+  }
+
+  return response.json();
+};
+
+export const ProfilePictureUpload = ({
   open,
   onOpenChange,
   onUpload,
   aspectRatio = 1,
-  initialTab = 'upload'
-}: ProfilePictureUploadProps) {
+  initialTab = 'upload',
+  permissions
+}: ProfilePictureUploadProps) => {
+  const canUpload = permissions.some((p) => CAN_MANAGE_UI.includes(p.type));
+
+  if (!canUpload) return null;
+
   const [image, setImage] = React.useState<string | null>(null);
   const [crop, setCrop] = React.useState<Point>({ x: 0, y: 0 });
   const [zoom, setZoom] = React.useState(1);
@@ -273,4 +308,4 @@ export function ProfilePictureUpload({
       </DialogContent>
     </Dialog>
   );
-}
+};

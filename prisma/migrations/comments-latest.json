@@ -1,38 +1,496 @@
 {
-  "seed_executions": {
+  "platform_users": {
     "table": {
-      "tableName": "seed_executions",
-      "comment": ""
+      "tableName": "platform_users",
+      "comment": "Platform user model with authentication capabilities"
     },
     "columns": [
       {
-        "tableName": "seed_executions",
+        "tableName": "platform_users",
         "columnName": "created_at",
         "comment": ""
       },
       {
-        "tableName": "seed_executions",
+        "tableName": "platform_users",
         "columnName": "updated_at",
         "comment": ""
       },
       {
-        "tableName": "seed_executions",
+        "tableName": "platform_users",
         "columnName": "last_modified_by",
         "comment": ""
       },
       {
-        "tableName": "seed_executions",
+        "tableName": "platform_users",
+        "columnName": "deleted_at",
+        "comment": ""
+      },
+      {
+        "tableName": "platform_users",
+        "columnName": "deleted_by",
+        "comment": ""
+      },
+      {
+        "tableName": "platform_users",
         "columnName": "id",
         "comment": ""
       },
       {
-        "tableName": "seed_executions",
-        "columnName": "seed_name",
+        "tableName": "platform_users",
+        "columnName": "email_address",
         "comment": ""
       },
       {
-        "tableName": "seed_executions",
-        "columnName": "executed_at",
+        "tableName": "platform_users",
+        "columnName": "email_address_verified_at",
+        "comment": ""
+      },
+      {
+        "tableName": "platform_users",
+        "columnName": "phone_number",
+        "comment": ""
+      },
+      {
+        "tableName": "platform_users",
+        "columnName": "phone_number_verified_at",
+        "comment": ""
+      },
+      {
+        "tableName": "platform_users",
+        "columnName": "password_hash",
+        "comment": ""
+      },
+      {
+        "tableName": "platform_users",
+        "columnName": "mfa_enabled",
+        "comment": ""
+      },
+      {
+        "tableName": "platform_users",
+        "columnName": "authenticationMethods",
+        "comment": ""
+      },
+      {
+        "tableName": "platform_users",
+        "columnName": "status",
+        "comment": ""
+      },
+      {
+        "tableName": "platform_users",
+        "columnName": "last_login_at",
+        "comment": ""
+      },
+      {
+        "tableName": "platform_users",
+        "columnName": "failed_login_attempts",
+        "comment": ""
+      },
+      {
+        "tableName": "platform_users",
+        "columnName": "locked_until",
+        "comment": ""
+      },
+      {
+        "tableName": "platform_users",
+        "columnName": "profile_picture_id",
+        "comment": ""
+      }
+    ]
+  },
+  "auth_sessions": {
+    "table": {
+      "tableName": "auth_sessions",
+      "comment": "Authentication session for a user"
+    },
+    "columns": [
+      {
+        "tableName": "auth_sessions",
+        "columnName": "id",
+        "comment": ""
+      },
+      {
+        "tableName": "auth_sessions",
+        "columnName": "user_id",
+        "comment": ""
+      },
+      {
+        "tableName": "auth_sessions",
+        "columnName": "token",
+        "comment": ""
+      },
+      {
+        "tableName": "auth_sessions",
+        "columnName": "expires_at",
+        "comment": ""
+      },
+      {
+        "tableName": "auth_sessions",
+        "columnName": "last_active_at",
+        "comment": ""
+      },
+      {
+        "tableName": "auth_sessions",
+        "columnName": "ip_address",
+        "comment": ""
+      },
+      {
+        "tableName": "auth_sessions",
+        "columnName": "user_agent",
+        "comment": ""
+      },
+      {
+        "tableName": "auth_sessions",
+        "columnName": "deviceInfo",
+        "comment": ""
+      },
+      {
+        "tableName": "auth_sessions",
+        "columnName": "geo_location",
+        "comment": ""
+      },
+      {
+        "tableName": "auth_sessions",
+        "columnName": "is_revoked",
+        "comment": ""
+      },
+      {
+        "tableName": "auth_sessions",
+        "columnName": "revoked_at",
+        "comment": ""
+      }
+    ]
+  },
+  "audit_logs": {
+    "table": {
+      "tableName": "audit_logs",
+      "comment": "Audit log for security events"
+    },
+    "columns": [
+      {
+        "tableName": "audit_logs",
+        "columnName": "id",
+        "comment": ""
+      },
+      {
+        "tableName": "audit_logs",
+        "columnName": "event_type",
+        "comment": ""
+      },
+      {
+        "tableName": "audit_logs",
+        "columnName": "resource_type",
+        "comment": ""
+      },
+      {
+        "tableName": "audit_logs",
+        "columnName": "resource_id",
+        "comment": ""
+      },
+      {
+        "tableName": "audit_logs",
+        "columnName": "user_id",
+        "comment": ""
+      },
+      {
+        "tableName": "audit_logs",
+        "columnName": "severity",
+        "comment": ""
+      },
+      {
+        "tableName": "audit_logs",
+        "columnName": "description",
+        "comment": ""
+      },
+      {
+        "tableName": "audit_logs",
+        "columnName": "metadata",
+        "comment": ""
+      },
+      {
+        "tableName": "audit_logs",
+        "columnName": "success",
+        "comment": ""
+      }
+    ]
+  },
+  "oauth_accounts": {
+    "table": {
+      "tableName": "oauth_accounts",
+      "comment": "OAuth account linked to a platform user"
+    },
+    "columns": [
+      {
+        "tableName": "oauth_accounts",
+        "columnName": "id",
+        "comment": ""
+      },
+      {
+        "tableName": "oauth_accounts",
+        "columnName": "user_id",
+        "comment": ""
+      },
+      {
+        "tableName": "oauth_accounts",
+        "columnName": "provider",
+        "comment": ""
+      },
+      {
+        "tableName": "oauth_accounts",
+        "columnName": "provider_account_id",
+        "comment": ""
+      },
+      {
+        "tableName": "oauth_accounts",
+        "columnName": "access_token",
+        "comment": ""
+      },
+      {
+        "tableName": "oauth_accounts",
+        "columnName": "refresh_token",
+        "comment": ""
+      },
+      {
+        "tableName": "oauth_accounts",
+        "columnName": "expires_at",
+        "comment": ""
+      },
+      {
+        "tableName": "oauth_accounts",
+        "columnName": "token_type",
+        "comment": ""
+      },
+      {
+        "tableName": "oauth_accounts",
+        "columnName": "scope",
+        "comment": ""
+      },
+      {
+        "tableName": "oauth_accounts",
+        "columnName": "id_token",
+        "comment": ""
+      },
+      {
+        "tableName": "oauth_accounts",
+        "columnName": "session_state",
+        "comment": ""
+      }
+    ]
+  },
+  "verification_tokens": {
+    "table": {
+      "tableName": "verification_tokens",
+      "comment": "Verification token for email/phone verification"
+    },
+    "columns": [
+      {
+        "tableName": "verification_tokens",
+        "columnName": "id",
+        "comment": ""
+      },
+      {
+        "tableName": "verification_tokens",
+        "columnName": "identifier",
+        "comment": ""
+      },
+      {
+        "tableName": "verification_tokens",
+        "columnName": "token",
+        "comment": ""
+      },
+      {
+        "tableName": "verification_tokens",
+        "columnName": "type",
+        "comment": ""
+      },
+      {
+        "tableName": "verification_tokens",
+        "columnName": "expires_at",
+        "comment": ""
+      }
+    ]
+  },
+  "permissions": {
+    "table": {
+      "tableName": "permissions",
+      "comment": ""
+    },
+    "columns": [
+      {
+        "tableName": "permissions",
+        "columnName": "created_at",
+        "comment": ""
+      },
+      {
+        "tableName": "permissions",
+        "columnName": "updated_at",
+        "comment": ""
+      },
+      {
+        "tableName": "permissions",
+        "columnName": "last_modified_by",
+        "comment": ""
+      },
+      {
+        "tableName": "permissions",
+        "columnName": "deleted_at",
+        "comment": ""
+      },
+      {
+        "tableName": "permissions",
+        "columnName": "deleted_by",
+        "comment": ""
+      },
+      {
+        "tableName": "permissions",
+        "columnName": "id",
+        "comment": ""
+      },
+      {
+        "tableName": "permissions",
+        "columnName": "user_id",
+        "comment": ""
+      },
+      {
+        "tableName": "permissions",
+        "columnName": "type",
+        "comment": ""
+      },
+      {
+        "tableName": "permissions",
+        "columnName": "workspace_id",
+        "comment": ""
+      },
+      {
+        "tableName": "permissions",
+        "columnName": "client_id",
+        "comment": ""
+      },
+      {
+        "tableName": "permissions",
+        "columnName": "location_id",
+        "comment": ""
+      },
+      {
+        "tableName": "permissions",
+        "columnName": "last_accessed_at",
+        "comment": ""
+      }
+    ]
+  },
+  "incident": {
+    "table": {
+      "tableName": "incident",
+      "comment": "Security incident record"
+    },
+    "columns": [
+      {
+        "tableName": "incident",
+        "columnName": "created_at",
+        "comment": ""
+      },
+      {
+        "tableName": "incident",
+        "columnName": "updated_at",
+        "comment": ""
+      },
+      {
+        "tableName": "incident",
+        "columnName": "last_modified_by",
+        "comment": ""
+      },
+      {
+        "tableName": "incident",
+        "columnName": "deleted_at",
+        "comment": ""
+      },
+      {
+        "tableName": "incident",
+        "columnName": "deleted_by",
+        "comment": ""
+      },
+      {
+        "tableName": "incident",
+        "columnName": "id",
+        "comment": ""
+      },
+      {
+        "tableName": "incident",
+        "columnName": "title",
+        "comment": "Incident title/summary"
+      },
+      {
+        "tableName": "incident",
+        "columnName": "description",
+        "comment": "Detailed incident description"
+      },
+      {
+        "tableName": "incident",
+        "columnName": "status",
+        "comment": "Current incident status"
+      },
+      {
+        "tableName": "incident",
+        "columnName": "occurred_at",
+        "comment": "When the incident occurred"
+      },
+      {
+        "tableName": "incident",
+        "columnName": "address",
+        "comment": "Address where incident occurred"
+      },
+      {
+        "tableName": "incident",
+        "columnName": "severity",
+        "comment": "Incident severity"
+      },
+      {
+        "tableName": "incident",
+        "columnName": "category",
+        "comment": "Incident category"
+      },
+      {
+        "tableName": "incident",
+        "columnName": "response_time",
+        "comment": "Time to first response in minutes"
+      },
+      {
+        "tableName": "incident",
+        "columnName": "resolution_time",
+        "comment": "Time to resolution in minutes"
+      },
+      {
+        "tableName": "incident",
+        "columnName": "assigned_to_id",
+        "comment": ""
+      },
+      {
+        "tableName": "incident",
+        "columnName": "assigned_at",
+        "comment": "When the incident was assigned"
+      },
+      {
+        "tableName": "incident",
+        "columnName": "priority",
+        "comment": "Priority level (1-5)"
+      },
+      {
+        "tableName": "incident",
+        "columnName": "due_date",
+        "comment": "Due date for resolution"
+      },
+      {
+        "tableName": "incident",
+        "columnName": "tags",
+        "comment": "Tags for categorization"
+      },
+      {
+        "tableName": "incident",
+        "columnName": "client_id",
+        "comment": ""
+      },
+      {
+        "tableName": "incident",
+        "columnName": "location_id",
         "comment": ""
       }
     ]
@@ -40,24 +498,9 @@
   "object_storage_files": {
     "table": {
       "tableName": "object_storage_files",
-      "comment": "Object storage file model for files uploaded to S3, Azure, or GCP"
+      "comment": "File stored in object storage (S3, Azure, GCP)"
     },
     "columns": [
-      {
-        "tableName": "object_storage_files",
-        "columnName": "created_at",
-        "comment": ""
-      },
-      {
-        "tableName": "object_storage_files",
-        "columnName": "updated_at",
-        "comment": ""
-      },
-      {
-        "tableName": "object_storage_files",
-        "columnName": "last_modified_by",
-        "comment": ""
-      },
       {
         "tableName": "object_storage_files",
         "columnName": "id",
@@ -65,1622 +508,315 @@
       },
       {
         "tableName": "object_storage_files",
-        "columnName": "storage_service",
-        "comment": "Object storage service name"
+        "columnName": "createdAt",
+        "comment": ""
       },
       {
         "tableName": "object_storage_files",
-        "columnName": "object_key",
-        "comment": "Object storage key for the file"
+        "columnName": "updatedAt",
+        "comment": ""
       },
       {
         "tableName": "object_storage_files",
-        "columnName": "object_bucket",
-        "comment": "Object storage bucket for the file"
+        "columnName": "objectKey",
+        "comment": ""
       },
       {
         "tableName": "object_storage_files",
-        "columnName": "object_region",
-        "comment": "Object storage region for the file"
+        "columnName": "objectBucket",
+        "comment": ""
       },
       {
         "tableName": "object_storage_files",
-        "columnName": "is_public_object",
-        "comment": "Whether the object is public"
-      },
-      {
-        "tableName": "object_storage_files",
-        "columnName": "signed_get_url",
-        "comment": "Signed GET URL for the file"
-      },
-      {
-        "tableName": "object_storage_files",
-        "columnName": "signed_get_url_expires_at",
-        "comment": "Signed GET URL expiration date"
+        "columnName": "sizeInBytes",
+        "comment": ""
       },
       {
         "tableName": "object_storage_files",
         "columnName": "mime_type",
-        "comment": "MIME type of the file"
-      },
-      {
-        "tableName": "object_storage_files",
-        "columnName": "modified_at",
-        "comment": "Modified date of the file"
-      },
-      {
-        "tableName": "object_storage_files",
-        "columnName": "size",
-        "comment": "Size of the file"
-      },
-      {
-        "tableName": "object_storage_files",
-        "columnName": "e_tag",
-        "comment": "ETag of the file (MD5 hash)"
-      },
-      {
-        "tableName": "object_storage_files",
-        "columnName": "version_id",
-        "comment": "Version ID (if versioning is enabled on the bucket)"
-      },
-      {
-        "tableName": "object_storage_files",
-        "columnName": "server_side_encryption",
-        "comment": "Server-side encryption algorithm"
-      },
-      {
-        "tableName": "object_storage_files",
-        "columnName": "content_encoding",
-        "comment": "Content encoding (e.g., gzip)"
-      },
-      {
-        "tableName": "object_storage_files",
-        "columnName": "content_disposition",
-        "comment": "Content disposition (e.g., inline, attachment)"
-      },
-      {
-        "tableName": "object_storage_files",
-        "columnName": "original_filename",
-        "comment": "Original filename when uploaded"
-      },
-      {
-        "tableName": "object_storage_files",
-        "columnName": "storage_class",
-        "comment": "Storage class (e.g., STANDARD, STANDARD_IA, GLACIER)"
+        "comment": ""
       },
       {
         "tableName": "object_storage_files",
         "columnName": "metadata",
-        "comment": "Metadata of the file"
+        "comment": ""
       }
     ]
   },
-  "workspaces": {
+  "client": {
     "table": {
-      "tableName": "workspaces",
-      "comment": "A workspace is the top-level organizational unit that contains clients, users, and devices"
+      "tableName": "client",
+      "comment": "Client organization within a workspace"
     },
     "columns": [
       {
-        "tableName": "workspaces",
+        "tableName": "client",
+        "columnName": "created_at",
+        "comment": ""
+      },
+      {
+        "tableName": "client",
+        "columnName": "updated_at",
+        "comment": ""
+      },
+      {
+        "tableName": "client",
+        "columnName": "last_modified_by",
+        "comment": ""
+      },
+      {
+        "tableName": "client",
         "columnName": "deleted_at",
         "comment": ""
       },
       {
-        "tableName": "workspaces",
+        "tableName": "client",
         "columnName": "deleted_by",
         "comment": ""
       },
       {
-        "tableName": "workspaces",
-        "columnName": "created_at",
-        "comment": ""
-      },
-      {
-        "tableName": "workspaces",
-        "columnName": "updated_at",
-        "comment": ""
-      },
-      {
-        "tableName": "workspaces",
-        "columnName": "last_modified_by",
-        "comment": ""
-      },
-      {
-        "tableName": "workspaces",
-        "columnName": "slug",
-        "comment": ""
-      },
-      {
-        "tableName": "workspaces",
+        "tableName": "client",
         "columnName": "id",
         "comment": ""
       },
       {
-        "tableName": "workspaces",
-        "columnName": "display_name",
-        "comment": "The display name for the workspace (can contain spaces and special characters)"
+        "tableName": "client",
+        "columnName": "name",
+        "comment": "Display name of the client"
       },
       {
-        "tableName": "workspaces",
-        "columnName": "company_name",
-        "comment": "The unique legal/registered company name across all workspaces"
+        "tableName": "client",
+        "columnName": "description",
+        "comment": "Optional client description"
       },
       {
-        "tableName": "workspaces",
-        "columnName": "company_email",
-        "comment": "List of contact persons associated with this workspace\nPrimary business email for official communications"
+        "tableName": "client",
+        "columnName": "logo_url",
+        "comment": "URL to client logo image"
       },
       {
-        "tableName": "workspaces",
-        "columnName": "company_website",
-        "comment": "Official company website URL"
-      },
-      {
-        "tableName": "workspaces",
-        "columnName": "company_phone_number",
-        "comment": "Primary contact phone number in international format (+XXXXXXXXXXX)"
-      },
-      {
-        "tableName": "workspaces",
-        "columnName": "timezone",
-        "comment": "Timezone for scheduling and displays (format: Region/City)"
-      },
-      {
-        "tableName": "workspaces",
-        "columnName": "workspace_status",
-        "comment": "Status of the workspace"
-      },
-      {
-        "tableName": "workspaces",
-        "columnName": "image_url",
-        "comment": "URL to the workspace logo"
-      },
-      {
-        "tableName": "workspaces",
-        "columnName": "notes",
-        "comment": "Notes for the workspace"
-      }
-    ]
-  },
-  "clients": {
-    "table": {
-      "tableName": "clients",
-      "comment": "Client is a company or organization attached to a workspace"
-    },
-    "columns": [
-      {
-        "tableName": "clients",
-        "columnName": "created_at",
-        "comment": ""
-      },
-      {
-        "tableName": "clients",
-        "columnName": "updated_at",
-        "comment": ""
-      },
-      {
-        "tableName": "clients",
-        "columnName": "last_modified_by",
-        "comment": ""
-      },
-      {
-        "tableName": "clients",
-        "columnName": "slug",
-        "comment": ""
-      },
-      {
-        "tableName": "clients",
-        "columnName": "notes",
-        "comment": ""
-      },
-      {
-        "tableName": "clients",
-        "columnName": "id",
-        "comment": ""
-      },
-      {
-        "tableName": "clients",
-        "columnName": "display_name",
-        "comment": "Display name for the client"
-      },
-      {
-        "tableName": "clients",
+        "tableName": "client",
         "columnName": "status",
-        "comment": "Status of the client"
+        "comment": "Current client status"
       },
       {
-        "tableName": "clients",
-        "columnName": "company_name",
-        "comment": "Company name for the client"
-      },
-      {
-        "tableName": "clients",
-        "columnName": "client_email",
-        "comment": "Primary business email for official communications"
-      },
-      {
-        "tableName": "clients",
-        "columnName": "client_website",
-        "comment": "Official company website URL"
-      },
-      {
-        "tableName": "clients",
-        "columnName": "client_phone_number",
-        "comment": "Primary contact phone number in international format (+XXXXXXXXXXX)"
-      },
-      {
-        "tableName": "clients",
-        "columnName": "image_url",
-        "comment": "URL to the client logo"
-      },
-      {
-        "tableName": "clients",
-        "columnName": "address",
-        "comment": "Address for the client"
-      },
-      {
-        "tableName": "clients",
-        "columnName": "workspace_id",
-        "comment": "Contact people for the client\nReference to the workspace this client belongs to"
-      }
-    ]
-  },
-  "client_locations": {
-    "table": {
-      "tableName": "client_locations",
-      "comment": ""
-    },
-    "columns": [
-      {
-        "tableName": "client_locations",
-        "columnName": "created_at",
-        "comment": ""
-      },
-      {
-        "tableName": "client_locations",
-        "columnName": "updated_at",
-        "comment": ""
-      },
-      {
-        "tableName": "client_locations",
-        "columnName": "last_modified_by",
-        "comment": ""
-      },
-      {
-        "tableName": "client_locations",
-        "columnName": "slug",
-        "comment": ""
-      },
-      {
-        "tableName": "client_locations",
-        "columnName": "notes",
-        "comment": ""
-      },
-      {
-        "tableName": "client_locations",
-        "columnName": "id",
-        "comment": ""
-      },
-      {
-        "tableName": "client_locations",
-        "columnName": "display_name",
-        "comment": ""
-      },
-      {
-        "tableName": "client_locations",
-        "columnName": "address",
-        "comment": "Contact people for this location\nAddress for this location"
-      },
-      {
-        "tableName": "client_locations",
-        "columnName": "timezone",
-        "comment": "Timezone for scheduling and displays (format: Region/City)"
-      },
-      {
-        "tableName": "client_locations",
-        "columnName": "location_type",
-        "comment": "Type of location"
-      },
-      {
-        "tableName": "client_locations",
-        "columnName": "client_id",
-        "comment": "Reference to the client ID this location belongs to"
-      },
-      {
-        "tableName": "client_locations",
-        "columnName": "workspace_id",
-        "comment": "Workspace ID for this location"
-      }
-    ]
-  },
-  "guard_profiles": {
-    "table": {
-      "tableName": "guard_profiles",
-      "comment": "Guard profile holds the guard information for security guards"
-    },
-    "columns": [
-      {
-        "tableName": "guard_profiles",
-        "columnName": "deleted_at",
-        "comment": ""
-      },
-      {
-        "tableName": "guard_profiles",
-        "columnName": "deleted_by",
-        "comment": ""
-      },
-      {
-        "tableName": "guard_profiles",
-        "columnName": "created_at",
-        "comment": ""
-      },
-      {
-        "tableName": "guard_profiles",
-        "columnName": "updated_at",
-        "comment": ""
-      },
-      {
-        "tableName": "guard_profiles",
-        "columnName": "last_modified_by",
-        "comment": ""
-      },
-      {
-        "tableName": "guard_profiles",
-        "columnName": "id",
-        "comment": ""
-      },
-      {
-        "tableName": "guard_profiles",
-        "columnName": "guard_staff_id",
-        "comment": "Unique ID for guard staff"
-      },
-      {
-        "tableName": "guard_profiles",
-        "columnName": "guard_pin_number",
-        "comment": "PIN number for on-device authentication"
-      },
-      {
-        "tableName": "guard_profiles",
-        "columnName": "user_id",
-        "comment": "Associated user"
-      }
-    ]
-  },
-  "user_profiles": {
-    "table": {
-      "tableName": "user_profiles",
-      "comment": ""
-    },
-    "columns": [
-      {
-        "tableName": "user_profiles",
-        "columnName": "deleted_at",
-        "comment": ""
-      },
-      {
-        "tableName": "user_profiles",
-        "columnName": "deleted_by",
-        "comment": ""
-      },
-      {
-        "tableName": "user_profiles",
-        "columnName": "created_at",
-        "comment": ""
-      },
-      {
-        "tableName": "user_profiles",
-        "columnName": "updated_at",
-        "comment": ""
-      },
-      {
-        "tableName": "user_profiles",
-        "columnName": "last_modified_by",
-        "comment": ""
-      },
-      {
-        "tableName": "user_profiles",
-        "columnName": "id",
-        "comment": ""
-      },
-      {
-        "tableName": "user_profiles",
-        "columnName": "firstName",
-        "comment": ""
-      },
-      {
-        "tableName": "user_profiles",
-        "columnName": "lastName",
-        "comment": ""
-      },
-      {
-        "tableName": "user_profiles",
-        "columnName": "nickName",
-        "comment": ""
-      },
-      {
-        "tableName": "user_profiles",
-        "columnName": "profileImage",
-        "comment": ""
-      },
-      {
-        "tableName": "user_profiles",
-        "columnName": "emergencyContact",
-        "comment": ""
-      },
-      {
-        "tableName": "user_profiles",
-        "columnName": "address",
-        "comment": ""
-      },
-      {
-        "tableName": "user_profiles",
-        "columnName": "gender",
-        "comment": ""
-      },
-      {
-        "tableName": "user_profiles",
-        "columnName": "user_id",
-        "comment": "User this profile belongs to"
-      }
-    ]
-  },
-  "platform_users": {
-    "table": {
-      "tableName": "platform_users",
-      "comment": "Platform-wide user model"
-    },
-    "columns": [
-      {
-        "tableName": "platform_users",
-        "columnName": "deleted_at",
-        "comment": ""
-      },
-      {
-        "tableName": "platform_users",
-        "columnName": "deleted_by",
-        "comment": ""
-      },
-      {
-        "tableName": "platform_users",
-        "columnName": "created_at",
-        "comment": ""
-      },
-      {
-        "tableName": "platform_users",
-        "columnName": "updated_at",
-        "comment": ""
-      },
-      {
-        "tableName": "platform_users",
-        "columnName": "last_modified_by",
-        "comment": ""
-      },
-      {
-        "tableName": "platform_users",
-        "columnName": "id",
-        "comment": ""
-      },
-      {
-        "tableName": "platform_users",
-        "columnName": "person_profile_id",
-        "comment": "Person profile specific to the user"
-      },
-      {
-        "tableName": "platform_users",
-        "columnName": "email_address",
-        "comment": "Email address for this user"
-      },
-      {
-        "tableName": "platform_users",
-        "columnName": "email_address_verified_at",
-        "comment": "Date when email address was verified or null if not verified"
-      },
-      {
-        "tableName": "platform_users",
-        "columnName": "phone_number",
-        "comment": "Phone number in E.164 format"
-      },
-      {
-        "tableName": "platform_users",
-        "columnName": "phone_number_verified_at",
-        "comment": "Date when phone number was verified or null if not verified"
-      },
-      {
-        "tableName": "platform_users",
-        "columnName": "user_password",
-        "comment": "Hashed password for local authentication"
-      },
-      {
-        "tableName": "platform_users",
-        "columnName": "is_two_factor_enabled",
-        "comment": "Whether two-factor authentication is enabled for this user"
-      },
-      {
-        "tableName": "platform_users",
-        "columnName": "user_status",
-        "comment": "Current status of the user account"
-      },
-      {
-        "tableName": "platform_users",
-        "columnName": "language_locale",
-        "comment": "User's preferred locale/language"
-      },
-      {
-        "tableName": "platform_users",
-        "columnName": "timezone",
-        "comment": "User's timezone"
-      },
-      {
-        "tableName": "platform_users",
-        "columnName": "is_onboarding_completed",
-        "comment": "Whether user has completed initial onboarding"
-      },
-      {
-        "tableName": "platform_users",
-        "columnName": "terms_accepted_at",
-        "comment": "Date when terms were accepted"
-      },
-      {
-        "tableName": "platform_users",
-        "columnName": "force_password_change",
-        "comment": "Force password change on next login"
-      },
-      {
-        "tableName": "platform_users",
-        "columnName": "last_password_change_at",
-        "comment": "Last password change timestamp"
-      },
-      {
-        "tableName": "platform_users",
-        "columnName": "login_locked_until",
-        "comment": "Login Locked Until"
-      },
-      {
-        "tableName": "platform_users",
-        "columnName": "last_login_at",
-        "comment": "Last successful login timestamp"
-      },
-      {
-        "tableName": "platform_users",
-        "columnName": "failed_login_attempts",
-        "comment": "Failed login attempts count"
-      },
-      {
-        "tableName": "platform_users",
-        "columnName": "mfa_recovery_codes",
-        "comment": "User's MFA recovery codes"
-      },
-      {
-        "tableName": "platform_users",
-        "columnName": "default_workspace_id",
-        "comment": "User's default workspace after login"
-      },
-      {
-        "tableName": "platform_users",
+        "tableName": "client",
         "columnName": "settings",
-        "comment": "User's settings"
+        "comment": "Client configuration settings"
+      },
+      {
+        "tableName": "client",
+        "columnName": "address",
+        "comment": "Physical address information"
+      },
+      {
+        "tableName": "client",
+        "columnName": "workspace_id",
+        "comment": ""
+      },
+      {
+        "tableName": "client",
+        "columnName": "max_locations",
+        "comment": "Maximum number of locations allowed"
       }
     ]
   },
-  "platform_user_login_attempts": {
+  "workspace": {
     "table": {
-      "tableName": "platform_user_login_attempts",
-      "comment": "Platform User login attempts"
+      "tableName": "workspace",
+      "comment": "Customer organization workspace"
     },
     "columns": [
       {
-        "tableName": "platform_user_login_attempts",
-        "columnName": "expiresAt",
-        "comment": ""
-      },
-      {
-        "tableName": "platform_user_login_attempts",
-        "columnName": "notify_before",
-        "comment": ""
-      },
-      {
-        "tableName": "platform_user_login_attempts",
+        "tableName": "workspace",
         "columnName": "created_at",
         "comment": ""
       },
       {
-        "tableName": "platform_user_login_attempts",
+        "tableName": "workspace",
         "columnName": "updated_at",
         "comment": ""
       },
       {
-        "tableName": "platform_user_login_attempts",
+        "tableName": "workspace",
         "columnName": "last_modified_by",
         "comment": ""
       },
       {
-        "tableName": "platform_user_login_attempts",
-        "columnName": "id",
-        "comment": ""
-      },
-      {
-        "tableName": "platform_user_login_attempts",
-        "columnName": "user_id",
-        "comment": "User's id"
-      },
-      {
-        "tableName": "platform_user_login_attempts",
-        "columnName": "isLoginFailed",
-        "comment": "Whether the login attempt was successful"
-      },
-      {
-        "tableName": "platform_user_login_attempts",
-        "columnName": "ip_address",
-        "comment": "IP address of the login attempt"
-      },
-      {
-        "tableName": "platform_user_login_attempts",
-        "columnName": "location",
-        "comment": "Location of the login attempt"
-      },
-      {
-        "tableName": "platform_user_login_attempts",
-        "columnName": "user_agent",
-        "comment": "User agent string from the login attempt"
-      },
-      {
-        "tableName": "platform_user_login_attempts",
-        "columnName": "device_type",
-        "comment": "Device type (mobile, desktop, tablet, etc.)"
-      },
-      {
-        "tableName": "platform_user_login_attempts",
-        "columnName": "browser",
-        "comment": "Browser name and version"
-      },
-      {
-        "tableName": "platform_user_login_attempts",
-        "columnName": "operating_system",
-        "comment": "Operating system"
-      },
-      {
-        "tableName": "platform_user_login_attempts",
-        "columnName": "failure_reason",
-        "comment": "Failure reason if the attempt failed (wrong password, invalid token, etc.)"
-      },
-      {
-        "tableName": "platform_user_login_attempts",
-        "columnName": "auth_method",
-        "comment": "Authentication method used (password, oauth, webauthn, etc.)"
-      },
-      {
-        "tableName": "platform_user_login_attempts",
-        "columnName": "session_id",
-        "comment": "Session ID if login was successful"
-      },
-      {
-        "tableName": "platform_user_login_attempts",
-        "columnName": "risk_score",
-        "comment": "Risk score (if you implement risk-based authentication)"
-      },
-      {
-        "tableName": "platform_user_login_attempts",
-        "columnName": "mfa_method",
-        "comment": "MFA method used if applicable"
-      },
-      {
-        "tableName": "platform_user_login_attempts",
-        "columnName": "mfa_required",
-        "comment": "Whether MFA was required for this attempt"
-      },
-      {
-        "tableName": "platform_user_login_attempts",
-        "columnName": "mfa_successful",
-        "comment": "Whether MFA was successful"
-      }
-    ]
-  },
-  "platform_user_accounts": {
-    "table": {
-      "tableName": "platform_user_accounts",
-      "comment": "Authentication accounts linked to a user"
-    },
-    "columns": [
-      {
-        "tableName": "platform_user_accounts",
+        "tableName": "workspace",
         "columnName": "deleted_at",
         "comment": ""
       },
       {
-        "tableName": "platform_user_accounts",
+        "tableName": "workspace",
         "columnName": "deleted_by",
         "comment": ""
       },
       {
-        "tableName": "platform_user_accounts",
-        "columnName": "created_at",
-        "comment": ""
-      },
-      {
-        "tableName": "platform_user_accounts",
-        "columnName": "updated_at",
-        "comment": ""
-      },
-      {
-        "tableName": "platform_user_accounts",
-        "columnName": "last_modified_by",
-        "comment": ""
-      },
-      {
-        "tableName": "platform_user_accounts",
-        "columnName": "user_id",
-        "comment": "Reference to the user who owns this account"
-      },
-      {
-        "tableName": "platform_user_accounts",
-        "columnName": "type",
-        "comment": "Type of OAuth account (oauth, email, etc)"
-      },
-      {
-        "tableName": "platform_user_accounts",
-        "columnName": "provider",
-        "comment": "OAuth provider name (google, github, etc)"
-      },
-      {
-        "tableName": "platform_user_accounts",
-        "columnName": "provider_account_id",
-        "comment": "Unique ID from the OAuth provider"
-      },
-      {
-        "tableName": "platform_user_accounts",
-        "columnName": "refresh_token",
-        "comment": "OAuth refresh token used to obtain new access tokens"
-      },
-      {
-        "tableName": "platform_user_accounts",
-        "columnName": "access_token",
-        "comment": "OAuth access token for API requests"
-      },
-      {
-        "tableName": "platform_user_accounts",
-        "columnName": "expires_at",
-        "comment": "Timestamp when the access token expires"
-      },
-      {
-        "tableName": "platform_user_accounts",
-        "columnName": "token_type",
-        "comment": "Type of OAuth token (e.g., Bearer)"
-      },
-      {
-        "tableName": "platform_user_accounts",
-        "columnName": "scope",
-        "comment": "OAuth permission scopes granted to the application"
-      },
-      {
-        "tableName": "platform_user_accounts",
-        "columnName": "id_token",
-        "comment": "JWT token containing user information"
-      },
-      {
-        "tableName": "platform_user_accounts",
-        "columnName": "session_state",
-        "comment": "OAuth session state for security validation"
-      }
-    ]
-  },
-  "platform_user_sessions": {
-    "table": {
-      "tableName": "platform_user_sessions",
-      "comment": ""
-    },
-    "columns": [
-      {
-        "tableName": "platform_user_sessions",
-        "columnName": "created_at",
-        "comment": ""
-      },
-      {
-        "tableName": "platform_user_sessions",
-        "columnName": "updated_at",
-        "comment": ""
-      },
-      {
-        "tableName": "platform_user_sessions",
-        "columnName": "last_modified_by",
-        "comment": ""
-      },
-      {
-        "tableName": "platform_user_sessions",
+        "tableName": "workspace",
         "columnName": "id",
         "comment": ""
       },
       {
-        "tableName": "platform_user_sessions",
-        "columnName": "session_token",
-        "comment": "Unique session token"
-      },
-      {
-        "tableName": "platform_user_sessions",
-        "columnName": "user_id",
-        "comment": "Reference to the user who owns this session"
-      },
-      {
-        "tableName": "platform_user_sessions",
-        "columnName": "expiresAt",
-        "comment": "Date when session expires"
-      },
-      {
-        "tableName": "platform_user_sessions",
-        "columnName": "ip_address",
-        "comment": "IP address of the session"
-      },
-      {
-        "tableName": "platform_user_sessions",
-        "columnName": "user_agent",
-        "comment": "User agent string"
-      },
-      {
-        "tableName": "platform_user_sessions",
-        "columnName": "last_activity_at",
-        "comment": "Last activity timestamp"
-      }
-    ]
-  },
-  "platform_user_verification_tokens": {
-    "table": {
-      "tableName": "platform_user_verification_tokens",
-      "comment": ""
-    },
-    "columns": [
-      {
-        "tableName": "platform_user_verification_tokens",
-        "columnName": "expiresAt",
-        "comment": ""
-      },
-      {
-        "tableName": "platform_user_verification_tokens",
-        "columnName": "notify_before",
-        "comment": ""
-      },
-      {
-        "tableName": "platform_user_verification_tokens",
-        "columnName": "identifier",
-        "comment": "User identifier (email or phone)"
-      },
-      {
-        "tableName": "platform_user_verification_tokens",
-        "columnName": "token",
-        "comment": "Verification token"
-      },
-      {
-        "tableName": "platform_user_verification_tokens",
-        "columnName": "type",
-        "comment": "Type of verification token"
-      }
-    ]
-  },
-  "platform_user_authenticators": {
-    "table": {
-      "tableName": "platform_user_authenticators",
-      "comment": ""
-    },
-    "columns": [
-      {
-        "tableName": "platform_user_authenticators",
-        "columnName": "created_at",
-        "comment": ""
-      },
-      {
-        "tableName": "platform_user_authenticators",
-        "columnName": "updated_at",
-        "comment": ""
-      },
-      {
-        "tableName": "platform_user_authenticators",
-        "columnName": "last_modified_by",
-        "comment": ""
-      },
-      {
-        "tableName": "platform_user_authenticators",
-        "columnName": "credential_id",
-        "comment": "Unique identifier for the WebAuthn credential"
-      },
-      {
-        "tableName": "platform_user_authenticators",
-        "columnName": "provider_account_id",
-        "comment": "Provider account ID"
-      },
-      {
-        "tableName": "platform_user_authenticators",
-        "columnName": "credential_public_key",
-        "comment": "Public key used for WebAuthn authentication"
-      },
-      {
-        "tableName": "platform_user_authenticators",
-        "columnName": "counter",
-        "comment": "Signature counter to prevent replay attacks"
-      },
-      {
-        "tableName": "platform_user_authenticators",
-        "columnName": "credential_device_type",
-        "comment": "Type of authenticator device (e.g., platform, cross-platform)"
-      },
-      {
-        "tableName": "platform_user_authenticators",
-        "columnName": "is_credential_backed_up",
-        "comment": "Indicates if credential is synced/backed up"
-      },
-      {
-        "tableName": "platform_user_authenticators",
-        "columnName": "transports",
-        "comment": "Allowed authentication transport methods (e.g., usb, nfc, ble)"
-      },
-      {
-        "tableName": "platform_user_authenticators",
-        "columnName": "user_id",
-        "comment": "Associated user ID who owns this authenticator"
-      }
-    ]
-  },
-  "workspace_permissions": {
-    "table": {
-      "tableName": "workspace_permissions",
-      "comment": ""
-    },
-    "columns": [
-      {
-        "tableName": "workspace_permissions",
-        "columnName": "created_at",
-        "comment": ""
-      },
-      {
-        "tableName": "workspace_permissions",
-        "columnName": "updated_at",
-        "comment": ""
-      },
-      {
-        "tableName": "workspace_permissions",
-        "columnName": "last_modified_by",
-        "comment": ""
-      },
-      {
-        "tableName": "workspace_permissions",
-        "columnName": "id",
-        "comment": ""
-      },
-      {
-        "tableName": "workspace_permissions",
-        "columnName": "permissions",
-        "comment": "Array of permission strings defining access rights for this workspace"
-      },
-      {
-        "tableName": "workspace_permissions",
-        "columnName": "user_id",
-        "comment": "Reference to the user ID who has these workspace permissions"
-      },
-      {
-        "tableName": "workspace_permissions",
-        "columnName": "workspace_id",
-        "comment": "Reference to the workspace ID these permissions apply to"
-      }
-    ]
-  },
-  "client_permissions": {
-    "table": {
-      "tableName": "client_permissions",
-      "comment": ""
-    },
-    "columns": [
-      {
-        "tableName": "client_permissions",
-        "columnName": "created_at",
-        "comment": ""
-      },
-      {
-        "tableName": "client_permissions",
-        "columnName": "updated_at",
-        "comment": ""
-      },
-      {
-        "tableName": "client_permissions",
-        "columnName": "last_modified_by",
-        "comment": ""
-      },
-      {
-        "tableName": "client_permissions",
-        "columnName": "id",
-        "comment": ""
-      },
-      {
-        "tableName": "client_permissions",
-        "columnName": "permissions",
-        "comment": "Array of permission strings defining access rights for this client"
-      },
-      {
-        "tableName": "client_permissions",
-        "columnName": "user_id",
-        "comment": "Reference to the user ID who has these client permissions"
-      },
-      {
-        "tableName": "client_permissions",
-        "columnName": "client_id",
-        "comment": "Reference to the client ID these permissions apply to"
-      }
-    ]
-  },
-  "client_location_permissions": {
-    "table": {
-      "tableName": "client_location_permissions",
-      "comment": ""
-    },
-    "columns": [
-      {
-        "tableName": "client_location_permissions",
-        "columnName": "created_at",
-        "comment": ""
-      },
-      {
-        "tableName": "client_location_permissions",
-        "columnName": "updated_at",
-        "comment": ""
-      },
-      {
-        "tableName": "client_location_permissions",
-        "columnName": "last_modified_by",
-        "comment": ""
-      },
-      {
-        "tableName": "client_location_permissions",
-        "columnName": "id",
-        "comment": ""
-      },
-      {
-        "tableName": "client_location_permissions",
-        "columnName": "permissions",
-        "comment": "Array of permission strings defining access rights for this client location"
-      },
-      {
-        "tableName": "client_location_permissions",
-        "columnName": "user_id",
-        "comment": "Reference to the user ID who has these location permissions"
-      },
-      {
-        "tableName": "client_location_permissions",
-        "columnName": "location_id",
-        "comment": "Reference to the location ID these permissions apply to"
-      }
-    ]
-  },
-  "mfa_backup_codes": {
-    "table": {
-      "tableName": "mfa_backup_codes",
-      "comment": ""
-    },
-    "columns": [
-      {
-        "tableName": "mfa_backup_codes",
-        "columnName": "created_at",
-        "comment": ""
-      },
-      {
-        "tableName": "mfa_backup_codes",
-        "columnName": "updated_at",
-        "comment": ""
-      },
-      {
-        "tableName": "mfa_backup_codes",
-        "columnName": "last_modified_by",
-        "comment": ""
-      },
-      {
-        "tableName": "mfa_backup_codes",
-        "columnName": "id",
-        "comment": ""
-      },
-      {
-        "tableName": "mfa_backup_codes",
-        "columnName": "code_hash",
-        "comment": "The backup code hash"
-      },
-      {
-        "tableName": "mfa_backup_codes",
-        "columnName": "is_used",
-        "comment": "Whether the code has been used"
-      },
-      {
-        "tableName": "mfa_backup_codes",
-        "columnName": "used_at",
-        "comment": "When the code was used"
-      },
-      {
-        "tableName": "mfa_backup_codes",
-        "columnName": "user_id",
-        "comment": "User who owns this backup code"
-      }
-    ]
-  },
-  "patrol_routes": {
-    "table": {
-      "tableName": "patrol_routes",
-      "comment": "A route for a guard to patrol"
-    },
-    "columns": [
-      {
-        "tableName": "patrol_routes",
-        "columnName": "created_at",
-        "comment": ""
-      },
-      {
-        "tableName": "patrol_routes",
-        "columnName": "updated_at",
-        "comment": ""
-      },
-      {
-        "tableName": "patrol_routes",
-        "columnName": "last_modified_by",
-        "comment": ""
-      },
-      {
-        "tableName": "patrol_routes",
-        "columnName": "notes",
-        "comment": ""
-      },
-      {
-        "tableName": "patrol_routes",
-        "columnName": "id",
-        "comment": ""
-      },
-      {
-        "tableName": "patrol_routes",
-        "columnName": "route_name",
-        "comment": "Name of the patrol route"
-      },
-      {
-        "tableName": "patrol_routes",
-        "columnName": "description",
-        "comment": "Description of the patrol route"
-      },
-      {
-        "tableName": "patrol_routes",
-        "columnName": "geoFence",
-        "comment": "GeoFence for the patrol route"
-      },
-      {
-        "tableName": "patrol_routes",
-        "columnName": "clientId",
-        "comment": "Reference to the client ID this patrol route belongs to"
-      },
-      {
-        "tableName": "patrol_routes",
-        "columnName": "workspaceId",
-        "comment": "Reference to the workspace ID this patrol route belongs to"
-      },
-      {
-        "tableName": "patrol_routes",
-        "columnName": "location_id",
-        "comment": "Reference to the location ID this patrol route belongs to"
-      }
-    ]
-  },
-  "patrol_sessions": {
-    "table": {
-      "tableName": "patrol_sessions",
-      "comment": ""
-    },
-    "columns": [
-      {
-        "tableName": "patrol_sessions",
-        "columnName": "created_at",
-        "comment": ""
-      },
-      {
-        "tableName": "patrol_sessions",
-        "columnName": "updated_at",
-        "comment": ""
-      },
-      {
-        "tableName": "patrol_sessions",
-        "columnName": "last_modified_by",
-        "comment": ""
-      },
-      {
-        "tableName": "patrol_sessions",
-        "columnName": "notes",
-        "comment": ""
-      },
-      {
-        "tableName": "patrol_sessions",
-        "columnName": "id",
-        "comment": ""
-      },
-      {
-        "tableName": "patrol_sessions",
-        "columnName": "patrol_route_id",
-        "comment": "Reference to the patrol route ID this patrol session belongs to"
-      },
-      {
-        "tableName": "patrol_sessions",
-        "columnName": "device_id",
-        "comment": "Reference to the device ID this patrol session belongs to"
-      },
-      {
-        "tableName": "patrol_sessions",
-        "columnName": "guard_profile_id",
-        "comment": "User ID of the guard who performed the patrol"
-      },
-      {
-        "tableName": "patrol_sessions",
-        "columnName": "started_at",
-        "comment": ""
-      },
-      {
-        "tableName": "patrol_sessions",
-        "columnName": "finished_at",
-        "comment": ""
-      },
-      {
-        "tableName": "patrol_sessions",
-        "columnName": "is_in_progress",
-        "comment": ""
-      }
-    ]
-  },
-  "checkpoints": {
-    "table": {
-      "tableName": "checkpoints",
-      "comment": ""
-    },
-    "columns": [
-      {
-        "tableName": "checkpoints",
-        "columnName": "created_at",
-        "comment": ""
-      },
-      {
-        "tableName": "checkpoints",
-        "columnName": "updated_at",
-        "comment": ""
-      },
-      {
-        "tableName": "checkpoints",
-        "columnName": "last_modified_by",
-        "comment": ""
-      },
-      {
-        "tableName": "checkpoints",
-        "columnName": "notes",
-        "comment": ""
-      },
-      {
-        "tableName": "checkpoints",
-        "columnName": "id",
-        "comment": ""
-      },
-      {
-        "tableName": "checkpoints",
+        "tableName": "workspace",
         "columnName": "name",
-        "comment": "Display name for the checkpoint"
+        "comment": "Display name of the workspace"
       },
       {
-        "tableName": "checkpoints",
+        "tableName": "workspace",
+        "columnName": "slug",
+        "comment": "URL-friendly unique identifier"
+      },
+      {
+        "tableName": "workspace",
+        "columnName": "logo_url",
+        "comment": "URL to workspace logo image"
+      },
+      {
+        "tableName": "workspace",
         "columnName": "description",
-        "comment": "Description for the checkpoint"
+        "comment": "Optional workspace description"
       },
       {
-        "tableName": "checkpoints",
-        "columnName": "qr_code",
-        "comment": "QR code for the checkpoint"
+        "tableName": "workspace",
+        "columnName": "status",
+        "comment": "Current workspace status"
       },
       {
-        "tableName": "checkpoints",
-        "columnName": "nfc_tag_id",
-        "comment": "NFC tag for the checkpoint"
+        "tableName": "workspace",
+        "columnName": "settings",
+        "comment": "Workspace configuration settings"
       },
       {
-        "tableName": "checkpoints",
+        "tableName": "workspace",
         "columnName": "address",
-        "comment": "Address for the checkpoint"
+        "comment": "Physical address information"
       },
       {
-        "tableName": "checkpoints",
-        "columnName": "coordinates",
-        "comment": "Coordinates for the checkpoint"
+        "tableName": "workspace",
+        "columnName": "max_clients",
+        "comment": "Maximum number of clients allowed"
       },
       {
-        "tableName": "checkpoints",
-        "columnName": "location_id",
-        "comment": "Reference to the location ID this checkpoint belongs to"
+        "tableName": "workspace",
+        "columnName": "max_locations_per_client",
+        "comment": "Maximum number of locations per client"
       },
       {
-        "tableName": "checkpoints",
-        "columnName": "type",
-        "comment": "Checkpoint type for the checkpoint"
-      },
-      {
-        "tableName": "checkpoints",
-        "columnName": "actions",
-        "comment": "Required actions for this checkpoint"
+        "tableName": "workspace",
+        "columnName": "features",
+        "comment": "Workspace features"
       }
     ]
   },
-  "checkpoint_scans": {
+  "location": {
     "table": {
-      "tableName": "checkpoint_scans",
-      "comment": "A scan of a checkpoint during a patrol"
+      "tableName": "location",
+      "comment": "Physical location for a client"
     },
     "columns": [
       {
-        "tableName": "checkpoint_scans",
+        "tableName": "location",
         "columnName": "created_at",
         "comment": ""
       },
       {
-        "tableName": "checkpoint_scans",
+        "tableName": "location",
         "columnName": "updated_at",
         "comment": ""
       },
       {
-        "tableName": "checkpoint_scans",
+        "tableName": "location",
         "columnName": "last_modified_by",
         "comment": ""
       },
       {
-        "tableName": "checkpoint_scans",
+        "tableName": "location",
+        "columnName": "deleted_at",
+        "comment": ""
+      },
+      {
+        "tableName": "location",
+        "columnName": "deleted_by",
+        "comment": ""
+      },
+      {
+        "tableName": "location",
         "columnName": "id",
         "comment": ""
       },
       {
-        "tableName": "checkpoint_scans",
-        "columnName": "scannedAt",
-        "comment": "Date and time of the scan"
+        "tableName": "location",
+        "columnName": "name",
+        "comment": "Display name of the location"
       },
       {
-        "tableName": "checkpoint_scans",
-        "columnName": "patrol_route_id",
-        "comment": "Reference to the patrol route ID this checkpoint scan belongs to"
-      },
-      {
-        "tableName": "checkpoint_scans",
-        "columnName": "checkpoint_id",
-        "comment": "Reference to the checkpoint ID this checkpoint scan belongs to"
-      },
-      {
-        "tableName": "checkpoint_scans",
-        "columnName": "device_id",
-        "comment": "Reference to the device ID this checkpoint scan belongs to"
-      }
-    ]
-  },
-  "incidents": {
-    "table": {
-      "tableName": "incidents",
-      "comment": ""
-    },
-    "columns": [
-      {
-        "tableName": "incidents",
-        "columnName": "created_at",
-        "comment": ""
-      },
-      {
-        "tableName": "incidents",
-        "columnName": "updated_at",
-        "comment": ""
-      },
-      {
-        "tableName": "incidents",
-        "columnName": "last_modified_by",
-        "comment": ""
-      },
-      {
-        "tableName": "incidents",
-        "columnName": "notes",
-        "comment": ""
-      },
-      {
-        "tableName": "incidents",
-        "columnName": "id",
-        "comment": ""
-      },
-      {
-        "tableName": "incidents",
-        "columnName": "shortSummary",
-        "comment": "Short summary for the incident"
-      },
-      {
-        "tableName": "incidents",
+        "tableName": "location",
         "columnName": "description",
-        "comment": "Description for the incident"
+        "comment": "Optional location description"
       },
       {
-        "tableName": "incidents",
-        "columnName": "is_in_progress",
-        "comment": "Whether the incident is currently in progress"
+        "tableName": "location",
+        "columnName": "status",
+        "comment": "Current location status"
       },
       {
-        "tableName": "incidents",
-        "columnName": "priority_id",
-        "comment": "Reference to the priority for this incident"
+        "tableName": "location",
+        "columnName": "address",
+        "comment": "Physical address information"
       },
       {
-        "tableName": "incidents",
-        "columnName": "status_id",
-        "comment": "Reference to the status for this incident"
+        "tableName": "location",
+        "columnName": "location_settings",
+        "comment": "Location configuration settings"
       },
       {
-        "tableName": "incidents",
-        "columnName": "device_id",
-        "comment": "Reference to the device ID this incident belongs to"
-      },
-      {
-        "tableName": "incidents",
+        "tableName": "location",
         "columnName": "client_id",
-        "comment": "Reference to the client this incident belongs to"
-      },
-      {
-        "tableName": "incidents",
-        "columnName": "location_id",
-        "comment": "Reference to the location ID this incident belongs to"
-      },
-      {
-        "tableName": "incidents",
-        "columnName": "workspace_id",
-        "comment": "Reference to the workspace this incident belongs to"
-      }
-    ]
-  },
-  "incident_statuses": {
-    "table": {
-      "tableName": "incident_statuses",
-      "comment": ""
-    },
-    "columns": [
-      {
-        "tableName": "incident_statuses",
-        "columnName": "created_at",
-        "comment": ""
-      },
-      {
-        "tableName": "incident_statuses",
-        "columnName": "updated_at",
-        "comment": ""
-      },
-      {
-        "tableName": "incident_statuses",
-        "columnName": "last_modified_by",
-        "comment": ""
-      },
-      {
-        "tableName": "incident_statuses",
-        "columnName": "id",
-        "comment": ""
-      },
-      {
-        "tableName": "incident_statuses",
-        "columnName": "name",
-        "comment": ""
-      },
-      {
-        "tableName": "incident_statuses",
-        "columnName": "type",
         "comment": ""
       }
     ]
   },
-  "incident_priorities": {
+  "seed_execution": {
     "table": {
-      "tableName": "incident_priorities",
-      "comment": ""
+      "tableName": "seed_execution",
+      "comment": "Tracks database seed executions for development and testing"
     },
     "columns": [
       {
-        "tableName": "incident_priorities",
-        "columnName": "created_at",
-        "comment": ""
-      },
-      {
-        "tableName": "incident_priorities",
-        "columnName": "updated_at",
-        "comment": ""
-      },
-      {
-        "tableName": "incident_priorities",
-        "columnName": "last_modified_by",
-        "comment": ""
-      },
-      {
-        "tableName": "incident_priorities",
+        "tableName": "seed_execution",
         "columnName": "id",
         "comment": ""
       },
       {
-        "tableName": "incident_priorities",
-        "columnName": "name",
+        "tableName": "seed_execution",
+        "columnName": "seed_name",
         "comment": ""
       },
       {
-        "tableName": "incident_priorities",
-        "columnName": "description",
+        "tableName": "seed_execution",
+        "columnName": "executed_at",
         "comment": ""
       },
       {
-        "tableName": "incident_priorities",
-        "columnName": "level",
-        "comment": ""
-      }
-    ]
-  },
-  "devices": {
-    "table": {
-      "tableName": "devices",
-      "comment": "Body camera, mobile device attached to a client"
-    },
-    "columns": [
-      {
-        "tableName": "devices",
-        "columnName": "created_at",
+        "tableName": "seed_execution",
+        "columnName": "completed_at",
         "comment": ""
       },
       {
-        "tableName": "devices",
-        "columnName": "updated_at",
+        "tableName": "seed_execution",
+        "columnName": "status",
         "comment": ""
       },
       {
-        "tableName": "devices",
-        "columnName": "last_modified_by",
+        "tableName": "seed_execution",
+        "columnName": "error",
         "comment": ""
       },
       {
-        "tableName": "devices",
-        "columnName": "id",
+        "tableName": "seed_execution",
+        "columnName": "metadata",
         "comment": ""
-      },
-      {
-        "tableName": "devices",
-        "columnName": "device_name",
-        "comment": "Name of the device  "
-      },
-      {
-        "tableName": "devices",
-        "columnName": "device_model",
-        "comment": "Model of the device"
-      },
-      {
-        "tableName": "devices",
-        "columnName": "serial_number",
-        "comment": "Serial number of the device"
-      },
-      {
-        "tableName": "devices",
-        "columnName": "mqtt_iot_thing_name",
-        "comment": "MQTT IoT Thing Name"
-      },
-      {
-        "tableName": "devices",
-        "columnName": "mqtt_iot_client_id",
-        "comment": "MQTT IoT Client ID"
-      },
-      {
-        "tableName": "devices",
-        "columnName": "mqtt_iot_shadow",
-        "comment": "MQTT IoT Shadow"
-      },
-      {
-        "tableName": "devices",
-        "columnName": "device_type",
-        "comment": "Type of device"
-      },
-      {
-        "tableName": "devices",
-        "columnName": "device_status",
-        "comment": "Status of the device"
-      },
-      {
-        "tableName": "devices",
-        "columnName": "workspaceId",
-        "comment": "Reference to the workspace ID this device belongs to"
-      },
-      {
-        "tableName": "devices",
-        "columnName": "clientId",
-        "comment": "Reference to the client ID this device belongs to"
       }
     ]
   }

@@ -1,18 +1,11 @@
-import { auth } from '@/lib/auth';
-import { guardRoute } from '@/lib/auth/guards';
+import { authMiddleware } from './lib/auth/middleware/auth-middleware';
 
-export default auth((req) => {
-  const { nextUrl } = req;
-  const isLoggedIn = !!req.auth;
-  return guardRoute(isLoggedIn, nextUrl, req);
-});
+// This middleware runs first, then can pass control to permission middleware
+export default authMiddleware;
 
 export const config = {
   matcher: [
-    '/dashboard/:path*',
-    '/settings/:path*',
-    '/workspace/:path*',
-    '/auth/:path*',
-    '/api/((?!auth).)*'
+    '/api/:path*',
+    '/((?!_next/static|_next/image|favicon.ico|public/|auth/|sitemap.xml|robots.txt).*)'
   ]
 };

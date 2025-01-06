@@ -1,58 +1,30 @@
-import { NextResponse } from 'next/server';
-import { DEFAULT_LOGIN_REDIRECT } from './config/routes';
-import { AuthError, AuthErrorCode } from './errors';
-import type { AuthRequest } from './types/auth';
+import { NextURL } from 'next/dist/server/web/next-url';
+import { NextResponse, type NextRequest } from 'next/server';
+import { ROUTES } from './config/routes';
+import { isAuthPath } from './utils/path-utils';
 
-export const guardRoute = (
-  isAuth: boolean,
-  nextUrl: URL,
-  req?: AuthRequest
-) => {
-  const { pathname } = nextUrl;
-  const isAuthPage = pathname.startsWith('/auth');
-  const isApiRoute = pathname.startsWith('/api');
-  const isWorkspacePath = pathname.startsWith('/workspace');
-
-  // Handle auth pages
-  if (isAuthPage && isAuth && !pathname.startsWith('/auth/verify')) {
-    // If user has a selected workspace, redirect there
-    if (req?.auth?.user?.selectedWorkspaceId) {
-      return NextResponse.redirect(
-        new URL(
-          `/workspace/${req.auth.user.selectedWorkspaceId}/dashboard`,
-          nextUrl
-        )
-      );
-    }
-    return NextResponse.redirect(new URL(DEFAULT_LOGIN_REDIRECT, nextUrl));
+export const guardRoute = async (
+  isLoggedIn: boolean,
+  nextUrl: NextURL,
+  request: NextRequest
+): Promise<NextResponse> => {
+  // Allow access to auth routes when not logged in
+  if (!isLoggedIn && isAuthPath(nextUrl.pathname)) {
+    return NextResponse.next();
   }
 
-  // Handle API routes
-  if (isApiRoute && !isAuth && !pathname.startsWith('/api/auth')) {
-    throw new AuthError(AuthErrorCode.SESSION_REQUIRED);
+  // Redirect to login if not authenticated
+  if (!isLoggedIn) {
+    const loginUrl = new URL(ROUTES.SIGN_IN.BASE, request.url);
+    loginUrl.searchParams.set('callbackUrl', nextUrl.pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
-  // Handle protected routes
-  if (!isAuth && !isAuthPage) {
-    const searchParams = new URLSearchParams({
-      error: AuthErrorCode.SESSION_REQUIRED,
-      callbackUrl: pathname
-    });
+  // Redirect away from auth pages when logged in
+  if (isLoggedIn && isAuthPath(nextUrl.pathname)) {
     return NextResponse.redirect(
-      new URL(`${DEFAULT_LOGIN_REDIRECT}?${searchParams}`, nextUrl)
+      new URL(ROUTES.PROTECTED.DASHBOARD, request.url)
     );
-  }
-
-  // Handle workspace access
-  if (isWorkspacePath && req?.auth?.user) {
-    const workspaceId = pathname.split('/')[2];
-    const hasAccess = req.auth.user.workspaces?.some(
-      (w) => w.id === workspaceId
-    );
-
-    if (!hasAccess) {
-      throw new AuthError(AuthErrorCode.WORKSPACE_ACCESS_DENIED);
-    }
   }
 
   return NextResponse.next();
