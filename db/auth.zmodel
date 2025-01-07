@@ -1,336 +1,191 @@
-import "./base.zmodel"
 import "./shared.zmodel"
-import "./incident.zmodel"
-import "./storage.zmodel"
+import "./object-storage-file.zmodel"
 import "./workspace.zmodel"
 import "./client.zmodel"
-import "./location.zmodel"
+import "./patrol.zmodel"
+import "./incident.zmodel"
+import "./user.zmodel"
 
-// =================== AUDIT LOG TYPES ===================
-/// Security event types for audit logging
-enum AuditLogEventType {
-  // CRUD Operations
-  CREATE @map("create")
-  UPDATE @map("update")
-  DELETE @map("delete")
-  ARCHIVE @map("archive")
-  RESTORE @map("restore")
-  
-  // Authentication Events
-  LOGIN @map("login")
-  LOGOUT @map("logout")
-  LOGIN_FAILED @map("login_failed")
-  SESSION_EXPIRED @map("session_expired")
-  SESSION_REVOKED @map("session_revoked")
-  
-  // Account Events
-  ACCOUNT_CREATED @map("account_created")
-  ACCOUNT_UPDATED @map("account_updated")
-  ACCOUNT_DELETED @map("account_deleted")
-  
-  // Permission Events
-  PERMISSION_GRANTED @map("permission_granted")
-  PERMISSION_REVOKED @map("permission_revoked")
-  ACCESS_DENIED @map("access_denied")
-  
-  // Password Events
-  PASSWORD_CHANGED @map("password_changed")
-  PASSWORD_RESET @map("password_reset")
-  PASSWORD_CHANGE_REQUIRED @map("password_change_required")
-  
-  // Security Events
-  SUSPICIOUS_ACTIVITY @map("suspicious_activity")
-  ERROR @map("error")
+///
+/// Authentication Hierarchy
+///
+/// User -> Workspace -> Client -> Patrol -> Incident
+///
+/// - User has zero or more Workspaces
+/// - Workspaces have zero or more Clients
+/// - Clients have zero or more Patrols 
+/// - Patrols have zero or more Incidents
+///
+/// Each level requires explicit permissions - permissions do not automatically cascade down.
+/// Users must be granted access at each level to interact with resources.
+///
 
-  @@map("audit_log_event_type_enum")
+/// Base role levels that determine general access patterns
+enum Role {
+  /// Can view basic information only
+  VIEWER @map("viewer")
+  /// Can edit basic information
+  MANAGER @map("manager")
+  /// Can manage all aspects including members
+  ADMIN @map("admin")
+  /// Can manage all aspects including members
+  OWNER @map("owner")
+
+  @@map("role_enum")
   @@schema("auth")
 }
 
-enum AuditLogResourceType {
-  USER @map("user")
-  SESSION @map("session")
-  PERMISSION @map("permission")
-  WORKSPACE @map("workspace")
-  CLIENT @map("client")
-  LOCATION @map("location")
-  VERIFICATION @map("verification")
-  OAUTH_ACCOUNT @map("oauth_account")
-  FILE @map("file")
-  INCIDENT @map("incident")
-  GUARD @map("guard")
-  DEVICE @map("device")
-  SETTING @map("setting")
-  SECURITY_EVENT @map("security_event")
-  AUTH_ERROR @map("auth_error")
+/// Defines granular permissions that can be combined with roles
+enum Permission {
+  // Workspace-level permissions
+  /// Access workspace settings
+  WORKSPACE_SETTINGS @map("workspace_settings")
+  /// Access workspace billing
+  WORKSPACE_BILLING @map("workspace_billing")
+  /// Manage workspace members
+  WORKSPACE_MEMBERS @map("workspace_members")
+  /// Manage workspace clients
+  WORKSPACE_CLIENTS @map("workspace_clients")
 
-  @@map("audit_log_resource_type_enum")
+  // Client-level permissions
+  /// Access client settings
+  CLIENT_SETTINGS @map("client_settings")
+  /// Manage client members
+  CLIENT_MEMBERS @map("client_members")
+  /// Manage client patrols
+  CLIENT_PATROLS @map("client_patrols")
+
+  // Patrol-level permissions
+  /// Access patrol settings
+  PATROL_SETTINGS @map("patrol_settings")
+  /// Manage patrol members
+  PATROL_MEMBERS @map("patrol_members")
+  /// Manage patrol incidents
+  PATROL_INCIDENTS @map("patrol_incidents")
+
+  @@map("permission_enum")
   @@schema("auth")
 }
 
-enum AuditSeverityLevel {
-  INFO @map("info")
-  WARNING @map("warning")
-  ERROR @map("error")
-  CRITICAL @map("critical")
-  ALERT @map("alert")
-  
-  @@map("audit_severity_level_enum")
-  @@schema("auth")
-}
-
-// =================== AUTHENTICATION TYPES ===================
-/// Authentication methods supported by the platform
-enum AuthenticationMethod {
-  /// Standard password authentication
-  PASSWORD @map("password")
-  /// One-time password via SMS/phone
-  PHONE_OTP @map("phone_otp")
-  /// Magic link via email
-  MAGIC_LINK @map("magic_link")
-  /// OAuth provider authentication
-  OAUTH @map("oauth")
-  /// WebAuthn/passkey authentication
-  WEBAUTHN @map("webauthn")
-
-  @@map("authentication_method_enum")
-  @@schema("auth")
-}
-
-/// OAuth provider options
-enum OAuthProvider {
-  /// Google authentication
-  GOOGLE @map("google")
-  /// GitHub authentication
-  GITHUB @map("github")
-  /// Microsoft authentication
-  MICROSOFT @map("microsoft")
-  /// Apple authentication
-  APPLE @map("apple")
-
-  @@map("oauth_provider_enum")
-  @@schema("auth")
-}
-
-/// OAuth scope permissions
-enum OAuthScope {
-  /// Access to email
-  EMAIL @map("email")
-  /// Access to profile information
-  PROFILE @map("profile")
-  /// OpenID Connect
-  OPENID @map("openid")
-  /// Calendar access
-  CALENDAR @map("calendar")
-  /// Drive/storage access
-  DRIVE @map("drive")
-
-  @@map("oauth_scope_enum")
-  @@schema("auth")
-}
-
-/// Platform user status options
-enum PlatformUserStatus {
-  /// User is active and can access the platform
-  ACTIVE @map("active")
-  /// User is inactive and cannot access the platform
-  INACTIVE @map("inactive")
-  /// User is suspended due to violations
-  SUSPENDED @map("suspended")
-  /// User account is pending verification
-  PENDING @map("pending")
-  /// User account has been deleted
-  DELETED @map("deleted")
-
-  @@map("platform_user_status_enum")
-  @@schema("auth")
-}
-
-// =================== CORE AUTH MODELS ===================
-/// Platform user model with authentication capabilities
-model PlatformUser extends BaseModel, AuditableModel, SchemaAuth {
-  // Identity & Contact
-  emailAddress String? @email @unique @map("email_address")
-  emailAddressVerifiedAt DateTime? @map("email_address_verified_at")
-  phoneNumber String? @unique @map("phone_number")
-  phoneNumberVerifiedAt DateTime? @map("phone_number_verified_at")
-  name String
-
-  // Authentication
-  passwordHash String? @map("password_hash")
-  passwordLastChanged DateTime? @map("password_last_changed")
-  requirePasswordChange Boolean @default(false) @map("require_password_change")
-  passwordResetAttempts Int @default(0) @map("password_reset_attempts")
-  lockoutUntil DateTime? @map("lockout_until")
-  mfaEnabled Boolean @default(false) @map("mfa_enabled")
-  authenticationMethods AuthenticationMethod[]
-
-  // Status & Security
-  status PlatformUserStatus @default(ACTIVE)
-  lastLoginAt DateTime? @map("last_login_at")
-  failedLoginAttempts Int @default(0) @map("failed_login_attempts")
-  lockedUntil DateTime? @map("locked_until")
-
-  // Sessions & OAuth (keep these!)
-  sessions AuthSession[]
-  oauthAccounts OAuthAccount[]
-
-  // Permissions (single relation)
-  permissions Permission[]
-  
-  // Incidents assigned to this user
-  assignedIncidents Incident[] @relation("AssignedIncidents")
-
-  // Profile
-  personProfile PersonProfile? @relation(fields: [personProfileId], references: [id])
-  personProfileId String? @map("person_profile_id") @unique
-  profilePicture ObjectStorageFile? @relation("ProfilePicture", fields: [profilePictureId], references: [id])
-  profilePictureId String? @map("profile_picture_id") @unique
-
-  @@map("platform_users")
-  @@allow('all', true)
-}
-
-/// Authentication session for a user
-model AuthSession extends BaseModel, SchemaAuth {
-  user PlatformUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+/// Links users to resources with role-based access control (RBAC) but also supports additional gradular permissions
+model ResourceMember extends Base, Id, Auditable, SchemaAuth {
+  /// The user being granted access
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String @map("user_id")
-  
-  token String @unique
-  expiresAt DateTime @map("expires_at")
-  lastActiveAt DateTime @map("last_active_at")
-  
-  // Security context
-  ipAddress String? @map("ip_address")
-  userAgent String? @map("user_agent")
-  deviceInfo DeviceInfo? @json
-  geoLocation Json? @map("geo_location")
-  
-  // Status
-  isRevoked Boolean @default(false) @map("is_revoked")
-  revokedAt DateTime? @map("revoked_at")
-  
-  @@index([userId])
-  @@map("auth_sessions")
-  @@allow('all', true)
-//  @@allow('all', auth().role == "ADMIN" || auth().userId == userId)
-}
 
-/// Audit log for security events
-model AuditLog extends BaseModel, SchemaAuth {
-  eventType AuditLogEventType @map("event_type")
-  resourceType AuditLogResourceType @map("resource_type")
-  resourceId String @map("resource_id")
-  userId String @map("user_id")
-  severity AuditSeverityLevel @default(INFO)
-  description String
-  metadata Json?
-  success Boolean @default(true)
-  
-  @@index([eventType])
-  @@index([resourceType, resourceId])
-  @@index([userId])
-  @@map("audit_logs")
-  @@allow('all', true)
-//  @@allow('read', auth().role == "ADMIN")
-}
-
-/// OAuth account linked to a platform user
-model OAuthAccount extends BaseModel, SchemaAuth {
-  user PlatformUser @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId String @map("user_id")
-  
-  provider OAuthProvider
-  providerAccountId String @map("provider_account_id")
-  accessToken String @map("access_token")
-  refreshToken String? @map("refresh_token")
-  expiresAt DateTime? @map("expires_at")
-  tokenType String @map("token_type")
-  scope String?
-  idToken String? @map("id_token")
-  sessionState String? @map("session_state")
-
-  @@unique([provider, providerAccountId])
-  @@map("oauth_accounts")
-  @@allow('all', true)
-}
-
-/// Verification token types
-enum VerificationTokenType {
-  EMAIL_VERIFICATION @map("email_verification")
-  PHONE_VERIFICATION @map("phone_verification")
-  PASSWORD_RESET @map("password_reset")
-  ACCOUNT_DELETION @map("account_deletion")
-
-  @@map("verification_token_type_enum")
-  @@schema("auth")
-}
-
-/// Verification token for email/phone verification
-model VerificationToken extends BaseModel, SchemaAuth {
-  identifier String
-  token String @unique
-  type VerificationTokenType
-  expiresAt DateTime @map("expires_at")
-
-  @@unique([identifier, token])
-  @@map("verification_tokens")
-  @@allow('all', true)
-}
-
-// Permission types
-enum PermissionType {
-  PLATFORM_ADMIN @map("platform_admin")
-  PLATFORM_USER @map("platform_user")
-  
-  WORKSPACE_ADMIN @map("workspace_admin")
-  WORKSPACE_EDITOR @map("workspace_editor")
-  WORKSPACE_VIEWER @map("workspace_viewer")
-  
-  CLIENT_ADMIN @map("client_admin")
-  CLIENT_EDITOR @map("client_editor")
-  CLIENT_VIEWER @map("client_viewer")
-  
-  LOCATION_ADMIN @map("location_admin")
-  LOCATION_EDITOR @map("location_editor")
-  LOCATION_VIEWER @map("location_viewer")
-
-  @@map("permission_type_enum")
-  @@schema("auth")
-}
-
-// Permission model
-model Permission extends BaseModel, AuditableModel, SchemaAuth {
-  user PlatformUser @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId String @map("user_id")
-  type PermissionType
+  // Relationships
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   workspaceId String? @map("workspace_id")
-  workspace Workspace? @relation("WorkspacePermissions", fields: [workspaceId], references: [id], onDelete: Cascade)
 
+  client Client? @relation(fields: [clientId], references: [id], onDelete: Cascade)
   clientId String? @map("client_id")
-  client Client? @relation("ClientPermissions", fields: [clientId], references: [id], onDelete: Cascade)
-
-  locationId String? @map("location_id")
-  location Location? @relation("LocationPermissions", fields: [locationId], references: [id], onDelete: Cascade)
-
-  lastAccessedAt DateTime? @map("last_accessed_at")
   
-  @@unique([userId, type, workspaceId, clientId, locationId])
-  @@map("permissions")
+  patrol Patrol? @relation(fields: [patrolId], references: [id], onDelete: Cascade)
+  patrolId String? @map("patrol_id")
+
+  /// The member's base role for this resource
+  role Role
+  /// Additional granular permissions
+  permissions Permission[]
+
+  @@unique([userId, workspaceId])
+  @@unique([userId, clientId])
+  @@unique([userId, patrolId])
+
   @@index([userId])
-  @@index([type])
-  @@index([workspaceId])
-  @@index([clientId])
-  @@index([locationId])
-  @@allow('all', true)
-}
 
-// Person profile information
-model PersonProfile extends BaseModel, AuditableModel, SchemaAuth {
-  firstName String @map("first_name")
-  lastName String? @map("last_name")
-  user PlatformUser?
-  
-  @@map("person_profiles")
-  @@allow('all', true)
-}
+  @@map("resource_members")
 
+  // Deny all actions if user is not active/logged in
+  @@deny('all', (
+    auth() == null || 
+    auth().status != ACTIVE
+  ))
+
+  // Allow all actions if user is platform admin
+  @@allow('all', (
+    auth().status == ACTIVE ||
+    auth().isPlatformAdmin
+  ))
+
+  // ACLs for ResourceMember
+  @@allow('create', (
+    // Allow users with ADMIN or OWNER role in the workspace to create members
+    this.workspace.members?[
+      workspace.status == ACTIVE &&
+      auth() == user && (
+        role == ADMIN || 
+        role == OWNER
+      )
+    ] ||
+    // Allow users with ADMIN or OWNER role in the client to create members
+    this.client.members?[
+      auth() == user && (
+        role == ADMIN || 
+        role == OWNER
+      )
+    ] ||
+    // Allow users with ADMIN or OWNER role in the patrol to create members
+    this.patrol.members?[
+      auth() == user && (
+        role == ADMIN || 
+        role == OWNER
+      )
+    ]
+  ))
+
+  @@allow('read', (
+    // Allow users who are members of the same workspace, client, or patrol
+    this.workspace.members?[auth() == user] ||
+    this.client.members?[auth() == user] ||
+    this.patrol.members?[auth() == user]
+  ))
+
+  @@allow('update', (
+    // Allow users with ADMIN or OWNER role in the workspace to update members
+    this.workspace.members?[
+      auth() == user && (
+        role == ADMIN || 
+        role == OWNER
+      )
+    ] ||
+    // Allow users with ADMIN or OWNER role in the client to update members
+    this.client.members?[
+      auth() == user && (
+        role == ADMIN ||
+        role == OWNER
+      )
+    ] ||
+    // Allow users with ADMIN or OWNER role in the patrol to update members
+    this.patrol.members?[
+      auth() == user && (
+        role == ADMIN ||
+        role == OWNER
+      )
+    ]
+  ))
+
+  @@allow('delete', (
+    // Allow users with ADMIN or OWNER role in the workspace to delete members
+    this.workspace.members?[
+      auth() == user && (
+        role == ADMIN ||
+        role == OWNER
+      )
+    ] ||
+    // Allow users with ADMIN or OWNER role in the client to delete members
+    this.client.members?[
+      auth() == user && (
+        role == ADMIN ||
+        role == OWNER
+      )
+    ] ||
+    // Allow users with ADMIN or OWNER role in the patrol to delete members
+    this.patrol.members?[
+      auth() == user && (
+        role == ADMIN ||
+        role == OWNER
+      )
+    ]
+  ))
+}

@@ -1,0 +1,49 @@
+import "./shared.zmodel"
+import "./incident.zmodel"
+import "./auth.zmodel"
+import "./workspace.zmodel"
+import "./client.zmodel"
+import "./user.zmodel"
+
+/// File stored in object storage (S3, Azure, GCP)
+model ObjectStorageFile extends Base, Id, Auditable, SchemaStorage {
+  objectKey String @map("object_key")
+  objectBucket String @map("object_bucket")
+  sizeInBytes Int @map("size_in_bytes")
+  mimeType String @map("mime_type")
+  metadata Json?
+
+  // Relations
+  incidents Incident[] @relation("IncidentAttachments")
+
+  profilePictureUser User? @relation("UserProfilePicture")
+
+  @@map("object_storage_files")
+
+  // Deny all actions if user is not active/logged in
+  @@deny('all', (
+    auth() == null || 
+    auth().status != ACTIVE
+  ))
+
+  // Allow all actions if user is platform admin
+  @@allow('all', (
+    auth().status == ACTIVE ||
+    auth().isPlatformAdmin
+  ))
+
+  // @@allow('create', (
+  //   // Allow users with OWNER role to create storage files
+  //   auth().role == OWNER
+  // ))
+
+  // @@allow('update', (
+  //   // Allow users with OWNER role to update storage files
+  //   auth().role == OWNER
+  // ))
+
+  // @@allow('delete', (
+  //   // Allow users with OWNER role to delete storage files
+  //   auth().role == OWNER
+  // ))
+} 

@@ -1,12 +1,12 @@
-import "./base.zmodel"
 import "./shared.zmodel"
-import "./workspace.zmodel"
 import "./auth.zmodel"
-import "./location.zmodel"
+import "./workspace.zmodel"
 import "./incident.zmodel"
+import "./patrol.zmodel"
+import "./object-storage-file.zmodel"
 
 /// Client organization within a workspace
-model Client extends BaseModel,AuditableModel, SchemaWorkspace {
+model Client extends Base, Id, Auditable, SchemaWorkspace {
   /// Display name of the client
   name String @length(1, 100) @regex('^[\\w\\s-]+$')
   /// Optional client description
@@ -24,17 +24,112 @@ model Client extends BaseModel,AuditableModel, SchemaWorkspace {
   /// Parent workspace
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   workspaceId String @map("workspace_id")
-  /// Physical locations
-  locations Location[]
-  permissions Permission[] @relation("ClientPermissions")
-
-  /// Maximum number of locations allowed
-  maxLocations Int? @map("max_locations") @lte(1000)
-
+  /// Physical patrols
+  patrols Patrol[]
+  /// Maximum number of patrols allowed
+  maxPatrols Int? @map("max_patrols") @lte(1000)
   /// Incidents
   incidents Incident[]
+  /// Members with permissions
+  members ResourceMember[]
 
+  @@unique([workspaceId, name])
   @@index([workspaceId])
+  
   @@map("client")
-  @@allow('all', true)
+
+  // Deny all actions if user is not active/logged in
+  @@deny('all', (
+    auth() == null || 
+    auth().status != ACTIVE
+  ))
+
+  // Allow all actions if user is platform admin
+  @@allow('all', (
+    auth().status == ACTIVE ||
+    auth().isPlatformAdmin
+  ))
+
+  @@allow('create', (
+    // Allow users with ADMIN, OWNER, or MANAGER role in the workspace to create clients
+    this.workspace.members?[
+      auth() == user && (
+        WORKSPACE_CLIENTS in permissions ||
+        role == ADMIN || 
+        role == OWNER ||
+        role == MANAGER
+      )
+    ]
+  ))
+
+  @@allow('read', (
+    // Allow users who are members of the workspace with appropriate permissions
+    this.workspace.members?[
+      workspace.status == ACTIVE &&
+      auth() == user && (
+        // User must have CLIENT_SETTINGS permission or be an ADMIN or MANAGER
+        WORKSPACE_CLIENTS in permissions ||
+        role == OWNER ||
+        role == ADMIN || 
+        role == MANAGER
+      )
+    ] ||
+    // Allow users who are members of the client with appropriate permissions
+    this.members?[
+      auth() == user && (
+        // User must have CLIENT_SETTINGS permission or be an ADMIN, MANAGER, or VIEWER
+        CLIENT_SETTINGS in permissions ||
+        role == OWNER ||
+        role == ADMIN ||
+        role == MANAGER ||
+        role == VIEWER
+      )
+    ]
+  ))
+
+  @@allow('update', (
+    // Allow users with ADMIN, OWNER, or MANAGER role in the workspace to update clients
+    this.workspace.members?[
+      workspace.status == ACTIVE &&
+      auth() == user && (
+        WORKSPACE_CLIENTS in permissions ||
+        role == ADMIN || 
+        role == OWNER ||
+        role == MANAGER
+      )
+    ] ||
+    // Allow users who are members of the client with appropriate permissions
+    this.members?[
+      auth() == user && (
+        // User must have CLIENT_SETTINGS permission or be an ADMIN, MANAGER, or VIEWER
+        CLIENT_SETTINGS in permissions ||
+        role == OWNER ||
+        role == ADMIN ||
+        role == MANAGER ||
+        role == VIEWER
+      )
+    ]
+  ))
+
+  @@allow('delete', (
+    // Allow users with ADMIN or OWNER role in the workspace to delete clients
+    this.workspace.members?[
+      workspace.status == ACTIVE &&
+      auth() == user && (
+        WORKSPACE_CLIENTS in permissions ||
+        role == ADMIN || 
+        role == OWNER
+      )
+    ]
+  ))
+
+  @@deny('update', (
+    // Prevent invalid status transitions
+    status != future().status && 
+    !(
+      (status == ACTIVE && future().status == DISABLED) ||
+      (status == DISABLED && future().status == ACTIVE) ||
+      (status == DISABLED && future().status == DELETED)
+    )
+  ))
 }

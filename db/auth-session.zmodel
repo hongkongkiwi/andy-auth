@@ -1,0 +1,99 @@
+import "./shared.zmodel"
+import "./auth.zmodel"
+import "./user.zmodel"
+
+/// Tracks authenticated user sessions across devices
+model AuthSession extends Base, Id, Auditable, SchemaAuth {
+  /// Unique session identifier
+  token String @unique
+  /// Session expiration timestamp
+  expiresAt DateTime @map("expires_at")
+  /// Session owner
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Foreign key to user
+  userId String @map("user_id")
+  
+  /// Client IP address
+  ipAddress String? @map("ip_address")
+  /// Client browser/app identifier
+  userAgent String? @map("user_agent")
+  /// Last activity timestamp
+  lastActiveAt DateTime? @map("last_active_at")
+  /// Manual session termination flag
+  isRevoked Boolean @default(false) @map("is_revoked")
+  /// Unique device identifier
+  deviceId String? @map("device_id")
+  /// User-provided device name
+  deviceName String? @map("device_name")
+  /// Session type (web/mobile/api)
+  sessionType String @default("web") @map("session_type")
+  /// Patrol data for session
+  geoPatrol Json? @map("geo_patrol")
+  /// MFA completion status
+  mfaVerified Boolean @default(false) @map("mfa_verified")
+  /// Failed authentication count
+  failedAttempts Int @default(0) @map("failed_attempts")
+  /// Session refresh token
+  refreshToken String? @unique @map("refresh_token")
+
+  @@index([userId])
+  @@index([token])
+  @@index([refreshToken])
+
+  // Enhanced validation rules
+  // @@validate(future().expiresAt > DateTime.now(), "Session expiration must be in the future")
+  // @@validate(future().failedAttempts >= 0, "Failed attempts cannot be negative")
+  // @@validate(future().lastActiveAt <= DateTime.now(), "Last active time cannot be in the future")
+
+  // Deny all actions if user is not active/logged in
+  @@deny('read,update,delete', (
+    auth() == null || 
+    auth().status != ACTIVE
+  ))
+
+  // Allow all actions if user is platform admin
+  @@allow('read,update,delete', (
+    auth() == user ||
+    auth().status == ACTIVE ||
+    auth().isPlatformAdmin
+  ))
+
+  // Only allow session creation for authenticated users creating their own session
+  @@allow('create', (
+    auth() == user &&
+    isRevoked == false
+  ))
+  
+  // Allow reading only users current session by the user themselves or a platform admin
+  @@allow('read', (
+    auth() == user
+  ))
+
+  // Restrict session updates to owner only
+  @@allow('update', (
+    auth() == user &&
+    isRevoked == false &&
+    // Prevent modification of critical fields
+    future().userId == userId &&
+    future().token == token
+  ))
+
+  // Allow session deletion by owner or admin, regardless of revocation status
+  @@allow('delete', (
+    auth() == user || 
+    auth().isPlatformAdmin
+  ))
+
+  // Prevent modification of security-critical fields after creation
+  @@deny('update', (
+    future().token != token ||
+    future().userId != userId ||
+    future().deviceId != deviceId
+  ))
+
+  // Prevent reactivation of revoked sessions
+  @@deny('update', (
+    isRevoked && 
+    future().isRevoked == false
+  ))
+}

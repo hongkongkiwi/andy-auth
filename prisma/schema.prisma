@@ -34,10 +34,114 @@ generator erdDiagram {
   typeForegroundColor   = "#4f83ff"
 }
 
+///
+/// Authentication Hierarchy
+///
+/// User -> Workspace -> Client -> Patrol -> Incident
+///
+/// - User has zero or more Workspaces
+/// - Workspaces have zero or more Clients
+/// - Clients have zero or more Patrols 
+/// - Patrols have zero or more Incidents
+///
+/// Each level requires explicit permissions - permissions do not automatically cascade down.
+/// Users must be granted access at each level to interact with resources.
+///
+/// Base role levels that determine general access patterns
+enum Role {
+  /// Can view basic information only
+  VIEWER  @map("viewer")
+  /// Can edit basic information
+  MANAGER @map("manager")
+  /// Can manage all aspects including members
+  ADMIN   @map("admin")
+  /// Can manage all aspects including members
+  OWNER   @map("owner")
+
+  @@map("role_enum")
+  @@schema("auth")
+}
+
+/// Defines granular permissions that can be combined with roles
+enum Permission {
+  /// Access workspace settings
+  WORKSPACE_SETTINGS @map("workspace_settings")
+  /// Access workspace billing
+  WORKSPACE_BILLING  @map("workspace_billing")
+  /// Manage workspace members
+  WORKSPACE_MEMBERS  @map("workspace_members")
+  /// Manage workspace clients
+  WORKSPACE_CLIENTS  @map("workspace_clients")
+  /// Access client settings
+  CLIENT_SETTINGS    @map("client_settings")
+  /// Manage client members
+  CLIENT_MEMBERS     @map("client_members")
+  /// Manage client patrols
+  CLIENT_PATROLS     @map("client_patrols")
+  /// Access patrol settings
+  PATROL_SETTINGS    @map("patrol_settings")
+  /// Manage patrol members
+  PATROL_MEMBERS     @map("patrol_members")
+  /// Manage patrol incidents
+  PATROL_INCIDENTS   @map("patrol_incidents")
+
+  @@map("permission_enum")
+  @@schema("auth")
+}
+
+/// Status options for incident tracking
+enum IncidentStatus {
+  /// Newly reported incident
+  REPORTED      @map("reported")
+  /// Under investigation
+  INVESTIGATING @map("investigating")
+  /// Resolution in progress
+  IN_PROGRESS   @map("in_progress")
+  /// Resolution complete
+  RESOLVED      @map("resolved")
+  /// Incident closed
+  CLOSED        @map("closed")
+
+  @@map("incident_status_enum")
+  @@schema("workspace")
+}
+
+/// Severity levels for incidents
+enum IncidentSeverity {
+  /// Critical impact requiring immediate attention
+  CRITICAL @map("critical")
+  /// High impact requiring urgent attention
+  HIGH     @map("high")
+  /// Moderate impact requiring normal attention
+  MEDIUM   @map("medium")
+  /// Low impact, can be handled routinely
+  LOW      @map("low")
+
+  @@map("incident_severity_enum")
+  @@schema("workspace")
+}
+
+/// Categories for incident classification
+enum IncidentCategory {
+  /// Security-related incidents
+  SECURITY    @map("security")
+  /// Safety-related incidents
+  SAFETY      @map("safety")
+  /// Maintenance-related incidents
+  MAINTENANCE @map("maintenance")
+  /// Other uncategorized incidents
+  OTHER       @map("other")
+
+  @@map("incident_category_enum")
+  @@schema("workspace")
+}
+
 /// Status options for entities like workspaces, clients, and locations
 enum EntityStatus {
   /// Fully operational
   ACTIVE   @map("active")
+  /// Fully operational
+  PENDING  @map("pending")
   /// Permanently disabled
   DISABLED @map("disabled")
   /// Marked for deletion
@@ -45,6 +149,81 @@ enum EntityStatus {
 
   @@map("entity_status_enum")
   @@schema("workspace")
+}
+
+/// Authentication methods supported by the platform
+enum AuthenticationMethod {
+  /// Standard password authentication
+  PASSWORD   @map("password")
+  /// One-time password via SMS/phone
+  PHONE_OTP  @map("phone_otp")
+  /// Magic link via email
+  MAGIC_LINK @map("magic_link")
+  /// OAuth provider authentication
+  OAUTH      @map("oauth")
+  /// WebAuthn/passkey authentication
+  WEBAUTHN   @map("webauthn")
+
+  @@map("authentication_method_enum")
+  @@schema("auth")
+}
+
+/// User status options
+enum UserStatus {
+  /// User is active and can access the platform
+  ACTIVE    @map("active")
+  /// User is inactive and cannot access the platform
+  INACTIVE  @map("inactive")
+  /// User is suspended due to violations
+  SUSPENDED @map("suspended")
+  /// User account is pending verification
+  PENDING   @map("pending")
+  /// User account has been deleted
+  DELETED   @map("deleted")
+
+  @@map("user_status_enum")
+  @@schema("auth")
+}
+
+/// OAuth provider options
+enum OAuthProvider {
+  /// Google authentication
+  GOOGLE    @map("google")
+  /// GitHub authentication
+  GITHUB    @map("github")
+  /// Microsoft authentication
+  MICROSOFT @map("microsoft")
+  /// Apple authentication
+  APPLE     @map("apple")
+
+  @@map("oauth_provider_enum")
+  @@schema("auth")
+}
+
+/// OAuth scope permissions
+enum OAuthScope {
+  /// Access to email
+  EMAIL    @map("email")
+  /// Access to profile information
+  PROFILE  @map("profile")
+  /// OpenID Connect
+  OPENID   @map("openid")
+  /// Calendar access
+  CALENDAR @map("calendar")
+  /// Drive/storage access
+  DRIVE    @map("drive")
+
+  @@map("oauth_scope_enum")
+  @@schema("auth")
+}
+
+enum SeedExecutionStatus {
+  RUNNING   @map("running")
+  COMPLETED @map("completed")
+  FAILED    @map("failed")
+
+  @@map("seed_execution_status")
+  @@schema("development")
 }
 
 /// Security event types for audit logging
@@ -107,72 +286,6 @@ enum AuditSeverityLevel {
   @@schema("auth")
 }
 
-/// Authentication methods supported by the platform
-enum AuthenticationMethod {
-  /// Standard password authentication
-  PASSWORD   @map("password")
-  /// One-time password via SMS/phone
-  PHONE_OTP  @map("phone_otp")
-  /// Magic link via email
-  MAGIC_LINK @map("magic_link")
-  /// OAuth provider authentication
-  OAUTH      @map("oauth")
-  /// WebAuthn/passkey authentication
-  WEBAUTHN   @map("webauthn")
-
-  @@map("authentication_method_enum")
-  @@schema("auth")
-}
-
-/// OAuth provider options
-enum OAuthProvider {
-  /// Google authentication
-  GOOGLE    @map("google")
-  /// GitHub authentication
-  GITHUB    @map("github")
-  /// Microsoft authentication
-  MICROSOFT @map("microsoft")
-  /// Apple authentication
-  APPLE     @map("apple")
-
-  @@map("oauth_provider_enum")
-  @@schema("auth")
-}
-
-/// OAuth scope permissions
-enum OAuthScope {
-  /// Access to email
-  EMAIL    @map("email")
-  /// Access to profile information
-  PROFILE  @map("profile")
-  /// OpenID Connect
-  OPENID   @map("openid")
-  /// Calendar access
-  CALENDAR @map("calendar")
-  /// Drive/storage access
-  DRIVE    @map("drive")
-
-  @@map("oauth_scope_enum")
-  @@schema("auth")
-}
-
-/// Platform user status options
-enum PlatformUserStatus {
-  /// User is active and can access the platform
-  ACTIVE    @map("active")
-  /// User is inactive and cannot access the platform
-  INACTIVE  @map("inactive")
-  /// User is suspended due to violations
-  SUSPENDED @map("suspended")
-  /// User account is pending verification
-  PENDING   @map("pending")
-  /// User account has been deleted
-  DELETED   @map("deleted")
-
-  @@map("platform_user_status_enum")
-  @@schema("auth")
-}
-
 /// Verification token types
 enum VerificationTokenType {
   EMAIL_VERIFICATION @map("email_verification")
@@ -184,241 +297,72 @@ enum VerificationTokenType {
   @@schema("auth")
 }
 
-enum PermissionType {
-  PLATFORM_ADMIN   @map("platform_admin")
-  PLATFORM_USER    @map("platform_user")
-  WORKSPACE_ADMIN  @map("workspace_admin")
-  WORKSPACE_EDITOR @map("workspace_editor")
-  WORKSPACE_VIEWER @map("workspace_viewer")
-  CLIENT_ADMIN     @map("client_admin")
-  CLIENT_EDITOR    @map("client_editor")
-  CLIENT_VIEWER    @map("client_viewer")
-  LOCATION_ADMIN   @map("location_admin")
-  LOCATION_EDITOR  @map("location_editor")
-  LOCATION_VIEWER  @map("location_viewer")
+/// Links users to resources with role-based access control (RBAC) but also supports additional gradular permissions
+model ResourceMember {
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt()
+  createdBy     String?
+  updatedBy     String?
+  deletedAt     DateTime?
+  deletedBy     String?
+  version       Int          @default(1)
+  changeHistory Json?
+  id            String       @id() @default(cuid(2))
+  /// The user being granted access
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String       @map("user_id")
+  workspace     Workspace?   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceId   String?      @map("workspace_id")
+  client        Client?      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId      String?      @map("client_id")
+  patrol        Patrol?      @relation(fields: [patrolId], references: [id], onDelete: Cascade)
+  patrolId      String?      @map("patrol_id")
+  /// The member's base role for this resource
+  role          Role
+  /// Additional granular permissions
+  permissions   Permission[]
 
-  @@map("permission_type_enum")
-  @@schema("auth")
-}
-
-/// Status options for incident tracking
-enum IncidentStatus {
-  /// Newly reported incident
-  REPORTED      @map("reported")
-  /// Under investigation
-  INVESTIGATING @map("investigating")
-  /// Resolution in progress
-  IN_PROGRESS   @map("in_progress")
-  /// Resolution complete
-  RESOLVED      @map("resolved")
-  /// Incident closed
-  CLOSED        @map("closed")
-
-  @@map("incident_status_enum")
-  @@schema("workspace")
-}
-
-/// Severity levels for incidents
-enum IncidentSeverity {
-  /// Critical impact requiring immediate attention
-  CRITICAL @map("critical")
-  /// High impact requiring urgent attention
-  HIGH     @map("high")
-  /// Moderate impact requiring normal attention
-  MEDIUM   @map("medium")
-  /// Low impact, can be handled routinely
-  LOW      @map("low")
-
-  @@map("incident_severity_enum")
-  @@schema("workspace")
-}
-
-/// Categories for incident classification
-enum IncidentCategory {
-  /// Security-related incidents
-  SECURITY    @map("security")
-  /// Safety-related incidents
-  SAFETY      @map("safety")
-  /// Maintenance-related incidents
-  MAINTENANCE @map("maintenance")
-  /// Other uncategorized incidents
-  OTHER       @map("other")
-
-  @@map("incident_category_enum")
-  @@schema("workspace")
-}
-
-enum SeedExecutionStatus {
-  RUNNING   @map("running")
-  COMPLETED @map("completed")
-  FAILED    @map("failed")
-
-  @@map("seed_execution_status")
-  @@schema("development")
-}
-
-/// Platform user model with authentication capabilities
-model PlatformUser {
-  createdAt              DateTime               @default(now()) @map("created_at")
-  updatedAt              DateTime               @updatedAt() @map("updated_at")
-  lastModifiedBy         String?                @map("last_modified_by")
-  deletedAt              DateTime?              @map("deleted_at")
-  deletedBy              String?                @map("deleted_by")
-  id                     String                 @id() @default(cuid(2))
-  emailAddress           String?                @unique() @map("email_address")
-  emailAddressVerifiedAt DateTime?              @map("email_address_verified_at")
-  phoneNumber            String?                @unique() @map("phone_number")
-  phoneNumberVerifiedAt  DateTime?              @map("phone_number_verified_at")
-  name                   String
-  passwordHash           String?                @map("password_hash")
-  passwordLastChanged    DateTime?              @map("password_last_changed")
-  requirePasswordChange  Boolean                @default(false) @map("require_password_change")
-  passwordResetAttempts  Int                    @default(0) @map("password_reset_attempts")
-  lockoutUntil           DateTime?              @map("lockout_until")
-  mfaEnabled             Boolean                @default(false) @map("mfa_enabled")
-  authenticationMethods  AuthenticationMethod[]
-  status                 PlatformUserStatus     @default(ACTIVE)
-  lastLoginAt            DateTime?              @map("last_login_at")
-  failedLoginAttempts    Int                    @default(0) @map("failed_login_attempts")
-  lockedUntil            DateTime?              @map("locked_until")
-  sessions               AuthSession[]
-  oauthAccounts          OAuthAccount[]
-  permissions            Permission[]
-  assignedIncidents      Incident[]             @relation("AssignedIncidents")
-  personProfile          PersonProfile?         @relation(fields: [personProfileId], references: [id])
-  personProfileId        String?                @unique() @map("person_profile_id")
-  profilePicture         ObjectStorageFile?     @relation("ProfilePicture", fields: [profilePictureId], references: [id])
-  profilePictureId       String?                @unique() @map("profile_picture_id")
-
-  @@index([deletedAt])
-  @@map("platform_users")
-  @@schema("auth")
-}
-
-/// Authentication session for a user
-model AuthSession {
-  id           String       @id() @default(cuid(2))
-  user         PlatformUser @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId       String       @map("user_id")
-  token        String       @unique()
-  expiresAt    DateTime     @map("expires_at")
-  lastActiveAt DateTime     @map("last_active_at")
-  ipAddress    String?      @map("ip_address")
-  userAgent    String?      @map("user_agent")
-  deviceInfo   Json?
-  geoLocation  Json?        @map("geo_location")
-  isRevoked    Boolean      @default(false) @map("is_revoked")
-  revokedAt    DateTime?    @map("revoked_at")
-
+  @@unique([userId, workspaceId])
+  @@unique([userId, clientId])
+  @@unique([userId, patrolId])
   @@index([userId])
-  @@map("auth_sessions")
+  @@map("resource_members")
   @@schema("auth")
 }
 
-/// Audit log for security events
-model AuditLog {
-  id           String               @id() @default(cuid(2))
-  eventType    AuditLogEventType    @map("event_type")
-  resourceType AuditLogResourceType @map("resource_type")
-  resourceId   String               @map("resource_id")
-  userId       String               @map("user_id")
-  severity     AuditSeverityLevel   @default(INFO)
-  description  String
-  metadata     Json?
-  success      Boolean              @default(true)
+/// File stored in object storage (S3, Azure, GCP)
+model ObjectStorageFile {
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt()
+  createdBy          String?
+  updatedBy          String?
+  deletedAt          DateTime?
+  deletedBy          String?
+  version            Int        @default(1)
+  changeHistory      Json?
+  id                 String     @id() @default(cuid(2))
+  objectKey          String     @map("object_key")
+  objectBucket       String     @map("object_bucket")
+  sizeInBytes        Int        @map("size_in_bytes")
+  mimeType           String     @map("mime_type")
+  metadata           Json?
+  incidents          Incident[] @relation("IncidentAttachments")
+  profilePictureUser User?      @relation("UserProfilePicture")
 
-  @@index([eventType])
-  @@index([resourceType, resourceId])
-  @@index([userId])
-  @@map("audit_logs")
-  @@schema("auth")
-}
-
-/// OAuth account linked to a platform user
-model OAuthAccount {
-  id                String        @id() @default(cuid(2))
-  user              PlatformUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId            String        @map("user_id")
-  provider          OAuthProvider
-  providerAccountId String        @map("provider_account_id")
-  accessToken       String        @map("access_token")
-  refreshToken      String?       @map("refresh_token")
-  expiresAt         DateTime?     @map("expires_at")
-  tokenType         String        @map("token_type")
-  scope             String?
-  idToken           String?       @map("id_token")
-  sessionState      String?       @map("session_state")
-
-  @@unique([provider, providerAccountId])
-  @@map("oauth_accounts")
-  @@schema("auth")
-}
-
-/// Verification token for email/phone verification
-model VerificationToken {
-  id         String                @id() @default(cuid(2))
-  identifier String
-  token      String                @unique()
-  type       VerificationTokenType
-  expiresAt  DateTime              @map("expires_at")
-
-  @@unique([identifier, token])
-  @@map("verification_tokens")
-  @@schema("auth")
-}
-
-model Permission {
-  createdAt      DateTime       @default(now()) @map("created_at")
-  updatedAt      DateTime       @updatedAt() @map("updated_at")
-  lastModifiedBy String?        @map("last_modified_by")
-  deletedAt      DateTime?      @map("deleted_at")
-  deletedBy      String?        @map("deleted_by")
-  id             String         @id() @default(cuid(2))
-  user           PlatformUser   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId         String         @map("user_id")
-  type           PermissionType
-  workspaceId    String?        @map("workspace_id")
-  workspace      Workspace?     @relation("WorkspacePermissions", fields: [workspaceId], references: [id], onDelete: Cascade)
-  clientId       String?        @map("client_id")
-  client         Client?        @relation("ClientPermissions", fields: [clientId], references: [id], onDelete: Cascade)
-  locationId     String?        @map("location_id")
-  location       Location?      @relation("LocationPermissions", fields: [locationId], references: [id], onDelete: Cascade)
-  lastAccessedAt DateTime?      @map("last_accessed_at")
-
-  @@unique([userId, type, workspaceId, clientId, locationId])
-  @@index([deletedAt])
-  @@index([userId])
-  @@index([type])
-  @@index([workspaceId])
-  @@index([clientId])
-  @@index([locationId])
-  @@map("permissions")
-  @@schema("auth")
-}
-
-model PersonProfile {
-  createdAt      DateTime      @default(now()) @map("created_at")
-  updatedAt      DateTime      @updatedAt() @map("updated_at")
-  lastModifiedBy String?       @map("last_modified_by")
-  deletedAt      DateTime?     @map("deleted_at")
-  deletedBy      String?       @map("deleted_by")
-  id             String        @id() @default(cuid(2))
-  firstName      String        @map("first_name")
-  lastName       String?       @map("last_name")
-  user           PlatformUser?
-
-  @@index([deletedAt])
-  @@map("person_profiles")
-  @@schema("auth")
+  @@map("object_storage_files")
+  @@schema("storage")
 }
 
 /// Security incident record
 model Incident {
-  createdAt          DateTime            @default(now()) @map("created_at")
-  updatedAt          DateTime            @updatedAt() @map("updated_at")
-  lastModifiedBy     String?             @map("last_modified_by")
-  deletedAt          DateTime?           @map("deleted_at")
-  deletedBy          String?             @map("deleted_by")
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt()
+  createdBy          String?
+  updatedBy          String?
+  deletedAt          DateTime?
+  deletedBy          String?
+  version            Int                 @default(1)
+  changeHistory      Json?
   id                 String              @id() @default(cuid(2))
   /// Incident title/summary
   title              String
@@ -440,9 +384,6 @@ model Incident {
   responseTime       Int?                @map("response_time")
   /// Time to resolution in minutes
   resolutionTime     Int?                @map("resolution_time")
-  /// Assigned user for handling the incident
-  assignedTo         PlatformUser?       @relation("AssignedIncidents", fields: [assignedToId], references: [id])
-  assignedToId       String?             @map("assigned_to_id")
   /// When the incident was assigned
   assignedAt         DateTime?           @map("assigned_at")
   /// Priority level (1-5)
@@ -457,149 +398,349 @@ model Incident {
   /// Client where incident occurred
   client             Client              @relation(fields: [clientId], references: [id], onDelete: Cascade)
   clientId           String              @map("client_id")
-  /// Location where incident occurred
-  location           Location            @relation(fields: [locationId], references: [id])
-  locationId         String              @map("location_id")
+  /// Patrol where incident occurred
+  patrol             Patrol              @relation(fields: [patrolId], references: [id])
+  patrolId           String              @map("patrol_id")
 
-  @@index([deletedAt])
+  @@unique([clientId, title, occurredAt])
   @@index([status, severity])
-  @@index([assignedToId])
   @@index([dueDate])
   @@map("incident")
   @@schema("workspace")
 }
 
-/// File stored in object storage (S3, Azure, GCP)
-model ObjectStorageFile {
-  id             String        @id() @default(cuid())
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt()
-  objectKey      String        @unique()
-  objectBucket   String
-  sizeInBytes    Int
-  mimeType       String        @map("mime_type")
-  metadata       Json?
-  profilePicture PlatformUser? @relation("ProfilePicture")
-  incidents      Incident[]    @relation("IncidentAttachments")
-
-  @@map("object_storage_files")
-  @@schema("storage")
-}
-
 /// Client organization within a workspace
 model Client {
-  createdAt      DateTime     @default(now()) @map("created_at")
-  updatedAt      DateTime     @updatedAt() @map("updated_at")
-  lastModifiedBy String?      @map("last_modified_by")
-  deletedAt      DateTime?    @map("deleted_at")
-  deletedBy      String?      @map("deleted_by")
-  id             String       @id() @default(cuid(2))
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt()
+  createdBy     String?
+  updatedBy     String?
+  deletedAt     DateTime?
+  deletedBy     String?
+  version       Int              @default(1)
+  changeHistory Json?
+  id            String           @id() @default(cuid(2))
   /// Display name of the client
-  name           String
+  name          String
   /// Optional client description
-  description    String?
+  description   String?
   /// URL to client logo image
-  logoUrl        String?      @map("logo_url")
+  logoUrl       String?          @map("logo_url")
   /// Current client status
-  status         EntityStatus @default(ACTIVE)
+  status        EntityStatus     @default(ACTIVE)
   /// Client configuration settings
-  settings       Json?
+  settings      Json?
   /// Physical address information
-  address        Json?
+  address       Json?
   /// Parent workspace
-  workspace      Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  workspaceId    String       @map("workspace_id")
-  /// Physical locations
-  locations      Location[]
-  permissions    Permission[] @relation("ClientPermissions")
-  /// Maximum number of locations allowed
-  maxLocations   Int?         @map("max_locations")
+  workspace     Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceId   String           @map("workspace_id")
+  /// Physical patrols
+  patrols       Patrol[]
+  /// Maximum number of patrols allowed
+  maxPatrols    Int?             @map("max_patrols")
   /// Incidents
-  incidents      Incident[]
+  incidents     Incident[]
+  /// Members with permissions
+  members       ResourceMember[]
 
-  @@index([deletedAt])
+  @@unique([workspaceId, name])
   @@index([workspaceId])
   @@map("client")
   @@schema("workspace")
 }
 
-/// Customer organization workspace
 model Workspace {
-  createdAt      DateTime     @default(now()) @map("created_at")
-  updatedAt      DateTime     @updatedAt() @map("updated_at")
-  lastModifiedBy String?      @map("last_modified_by")
-  deletedAt      DateTime?    @map("deleted_at")
-  deletedBy      String?      @map("deleted_by")
-  id             String       @id() @default(cuid(2))
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt()
+  createdBy     String?
+  updatedBy     String?
+  deletedAt     DateTime?
+  deletedBy     String?
+  version       Int              @default(1)
+  changeHistory Json?
+  id            String           @id() @default(cuid(2))
   /// Display name of the workspace
-  name           String
+  name          String
   /// URL-friendly unique identifier
-  slug           String       @unique()
+  slug          String           @unique()
   /// URL to workspace logo image
-  logoUrl        String?      @map("logo_url")
+  logoUrl       String?          @map("logo_url")
   /// Optional workspace description
-  description    String?
+  description   String?
   /// Current workspace status
-  status         EntityStatus @default(ACTIVE)
+  status        EntityStatus     @default(ACTIVE)
   /// Workspace configuration settings
-  settings       Json?
+  settings      Json?
   /// Physical address information
-  address        Json?
+  address       Json?
+  members       ResourceMember[]
   /// Client organizations
-  clients        Client[]
-  permissions    Permission[] @relation("WorkspacePermissions")
+  clients       Client[]
   /// Workspace features
-  features       String[]
+  features      String[]
+  owner         User?            @relation("WorkspaceOwner", fields: [ownerId], references: [id])
+  ownerId       String           @map("owner_id")
 
-  @@index([deletedAt])
   @@index([slug])
   @@map("workspace")
   @@schema("workspace")
 }
 
-/// Physical location for a client
-model Location {
-  createdAt        DateTime     @default(now()) @map("created_at")
-  updatedAt        DateTime     @updatedAt() @map("updated_at")
-  lastModifiedBy   String?      @map("last_modified_by")
-  deletedAt        DateTime?    @map("deleted_at")
-  deletedBy        String?      @map("deleted_by")
-  id               String       @id() @default(cuid(2))
-  /// Display name of the location
-  name             String
-  /// Optional location description
-  description      String?
-  /// Current location status
-  status           EntityStatus @default(ACTIVE)
+/// Physical patrol for a client
+model Patrol {
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt()
+  createdBy      String?
+  updatedBy      String?
+  deletedAt      DateTime?
+  deletedBy      String?
+  version        Int              @default(1)
+  changeHistory  Json?
+  id             String           @id() @default(cuid(2))
+  /// Display name of the patrol
+  name           String
+  /// Optional patrol description
+  description    String?
+  /// Current patrol status
+  status         EntityStatus     @default(ACTIVE)
   /// Physical address information
-  address          Json?
-  /// Location configuration settings
-  locationSettings Json?        @map("location_settings")
+  address        Json?
+  /// Patrol configuration settings
+  patrolSettings Json?            @map("patrol_settings")
   /// Parent client
-  client           Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  clientId         String       @map("client_id")
-  incidents        Incident[]
-  permissions      Permission[] @relation("LocationPermissions")
+  client         Client           @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId       String           @map("client_id")
+  incidents      Incident[]
+  members        ResourceMember[]
 
-  @@index([deletedAt])
+  @@unique([clientId, name])
   @@index([clientId])
-  @@map("location")
+  @@map("patrols")
   @@schema("workspace")
+}
+
+/// Core user model with authentication, profile, and relationship data
+model User {
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt()
+  createdBy             String?
+  updatedBy             String?
+  deletedAt             DateTime?
+  deletedBy             String?
+  version               Int                    @default(1)
+  changeHistory         Json?
+  id                    String                 @id() @default(cuid(2))
+  /// Primary email address for account access and notifications
+  email                 String                 @unique()
+  /// When email verification was completed
+  emailVerified         DateTime?
+  password              String?
+  /// Contact phone number for account recovery and 2FA
+  phoneNumber           String?                @unique()
+  /// When phone verification was completed
+  phoneVerified         DateTime?
+  /// MFA status flag
+  mfaEnabled            Boolean                @default(false)
+  mfaSecret             String?
+  backupCodes           String[]
+  /// Last successful authentication timestamp
+  lastLoginAt           DateTime?
+  /// Account status
+  status                UserStatus             @default(ACTIVE)
+  authenticationMethods AuthenticationMethod[]
+  /// Platform administrator access flag
+  isPlatformAdmin       Boolean                @default(false)
+  userProfile           UserProfile?
+  /// Display name for the user
+  name                  String?
+  image                 String?
+  /// Active user sessions
+  sessions              AuthSession[]
+  /// Workspaces where user is the owner
+  ownedWorkspaces       Workspace[]            @relation("WorkspaceOwner")
+  /// Profile picture file reference
+  profilePicture        ObjectStorageFile?     @relation("UserProfilePicture", fields: [profilePictureId], references: [id])
+  profilePictureId      String?                @unique() @map("profile_picture_id")
+  /// Workspace memberships
+  memberships           ResourceMember[]
+  /// OAuth accounts linked to this user
+  oauthAccounts         OAuthAccount[]
+
+  @@index([email])
+  @@index([phoneNumber])
+  @@index([status])
+  @@map("users")
+  @@schema("auth")
+}
+
+model UserProfile {
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt()
+  createdBy     String?
+  updatedBy     String?
+  deletedAt     DateTime?
+  deletedBy     String?
+  version       Int       @default(1)
+  changeHistory Json?
+  id            String    @id() @default(cuid(2))
+  firstName     String    @map("first_name")
+  lastName      String?   @map("last_name")
+  user          User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String?   @unique()
+
+  @@map("user_profiles")
+  @@schema("auth")
+}
+
+/// Tracks authenticated user sessions across devices
+model AuthSession {
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt()
+  createdBy      String?
+  updatedBy      String?
+  deletedAt      DateTime?
+  deletedBy      String?
+  version        Int       @default(1)
+  changeHistory  Json?
+  id             String    @id() @default(cuid(2))
+  /// Unique session identifier
+  token          String    @unique()
+  /// Session expiration timestamp
+  expiresAt      DateTime  @map("expires_at")
+  /// Session owner
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String    @map("user_id")
+  /// Client IP address
+  ipAddress      String?   @map("ip_address")
+  /// Client browser/app identifier
+  userAgent      String?   @map("user_agent")
+  /// Last activity timestamp
+  lastActiveAt   DateTime? @map("last_active_at")
+  /// Manual session termination flag
+  isRevoked      Boolean   @default(false) @map("is_revoked")
+  /// Unique device identifier
+  deviceId       String?   @map("device_id")
+  /// User-provided device name
+  deviceName     String?   @map("device_name")
+  /// Session type (web/mobile/api)
+  sessionType    String    @default("web") @map("session_type")
+  /// Patrol data for session
+  geoPatrol      Json?     @map("geo_patrol")
+  /// MFA completion status
+  mfaVerified    Boolean   @default(false) @map("mfa_verified")
+  /// Failed authentication count
+  failedAttempts Int       @default(0) @map("failed_attempts")
+  /// Session refresh token
+  refreshToken   String?   @unique() @map("refresh_token")
+
+  @@index([userId])
+  @@index([token])
+  @@index([refreshToken])
+  @@schema("auth")
+}
+
+/// Tracks OAuth provider accounts linked to users
+model OAuthAccount {
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt()
+  createdBy         String?
+  updatedBy         String?
+  deletedAt         DateTime?
+  deletedBy         String?
+  version           Int       @default(1)
+  changeHistory     Json?
+  id                String    @id() @default(cuid(2))
+  /// OAuth provider type (e.g., 'google', 'github')
+  provider          String
+  /// Provider-specific account identifier
+  providerAccountId String    @map("provider_account_id")
+  /// OAuth access token
+  accessToken       String?   @map("access_token")
+  /// OAuth refresh token
+  refreshToken      String?   @map("refresh_token")
+  /// Access token expiration
+  expiresAt         DateTime? @map("expires_at")
+  /// OAuth scope permissions
+  scope             String?   @map("scope")
+  /// ID token for OpenID Connect
+  idToken           String?   @map("id_token")
+  /// Token type (e.g., 'bearer')
+  tokenType         String?   @map("token_type")
+  /// Session state
+  sessionState      String?   @map("session_state")
+  /// Referenced user
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String    @map("user_id")
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@index([provider])
+  @@map("oauth_accounts")
+  @@schema("auth")
 }
 
 /// Tracks database seed executions for development and testing
 model SeedExecution {
-  id          String              @id() @default(cuid(2))
-  seedName    String              @map("seed_name")
-  executedAt  DateTime            @default(now()) @map("executed_at")
-  completedAt DateTime?           @map("completed_at")
-  status      SeedExecutionStatus @default(RUNNING)
-  error       String?
-  metadata    Json?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt()
+  createdBy     String?
+  updatedBy     String?
+  deletedAt     DateTime?
+  deletedBy     String?
+  version       Int                 @default(1)
+  changeHistory Json?
+  id            String              @id() @default(cuid(2))
+  seedName      String              @map("seed_name")
+  executedAt    DateTime            @default(now()) @map("executed_at")
+  completedAt   DateTime?           @map("completed_at")
+  status        SeedExecutionStatus @default(RUNNING)
+  error         String?
+  metadata      Json?
 
   @@unique([seedName, executedAt])
   @@index([status])
   @@index([seedName, status])
-  @@map("seed_execution")
+  @@map("seed_executions")
   @@schema("development")
+}
+
+/// Audit log for security events
+model AuditLog {
+  id           String               @id() @default(cuid(2))
+  eventType    AuditLogEventType    @map("event_type")
+  resourceType AuditLogResourceType @map("resource_type")
+  resourceId   String               @map("resource_id")
+  userId       String               @map("user_id")
+  severity     AuditSeverityLevel   @default(INFO)
+  description  String
+  metadata     Json?
+  success      Boolean              @default(true)
+
+  @@index([eventType])
+  @@index([resourceType, resourceId])
+  @@index([userId])
+  @@map("audit_logs")
+  @@schema("auth")
+}
+
+/// Verification token for email/phone verification
+model VerificationToken {
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt()
+  createdBy     String?
+  updatedBy     String?
+  deletedAt     DateTime?
+  deletedBy     String?
+  version       Int                   @default(1)
+  changeHistory Json?
+  id            String                @id() @default(cuid(2))
+  identifier    String
+  token         String                @unique()
+  type          VerificationTokenType
+  expiresAt     DateTime              @map("expires_at")
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+  @@schema("auth")
 }

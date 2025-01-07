@@ -1,24 +1,24 @@
 import {
   PrismaClient,
   OAuthProvider,
-  PlatformUser,
+  User,
   OAuthAccount
 } from '@prisma/client';
 import { faker } from '@faker-js/faker';
 import { createId } from '@paralleldrive/cuid2';
 
 interface SeedOAuthAccountsParams {
-  platformUsers: PlatformUser[];
+  users: User[];
 }
 
 export const seedOAuthAccounts = async (
   prisma: PrismaClient,
-  { platformUsers }: SeedOAuthAccountsParams
+  { users }: SeedOAuthAccountsParams
 ): Promise<OAuthAccount[]> => {
   const accounts: OAuthAccount[] = [];
 
   await Promise.all(
-    platformUsers.map(async (user) => {
+    users.map(async (user) => {
       if (faker.datatype.boolean()) {
         const provider = faker.helpers.arrayElement(
           Object.values(OAuthProvider)
@@ -26,13 +26,13 @@ export const seedOAuthAccounts = async (
 
         const account = await prisma.oAuthAccount.create({
           data: {
+            id: createId(),
             userId: user.id,
             provider,
             providerAccountId: faker.string.uuid(),
             accessToken: createId(),
             refreshToken: createId(),
             expiresAt: faker.date.future(),
-            tokenType: 'Bearer',
             scope: 'email profile',
             idToken: createId(),
             sessionState: null

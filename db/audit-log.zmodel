@@ -1,0 +1,90 @@
+import "./shared.zmodel"
+
+/// Audit log for security events
+model AuditLog extends Base, Id, SchemaAuth {
+  eventType AuditLogEventType @map("event_type")
+  resourceType AuditLogResourceType @map("resource_type")
+  resourceId String @map("resource_id")
+  userId String @map("user_id")
+  severity AuditSeverityLevel @default(INFO)
+  description String
+  metadata Json?
+  success Boolean @default(true)
+  
+  @@index([eventType])
+  @@index([resourceType, resourceId])
+  @@index([userId])
+  @@map("audit_logs")
+  @@allow('all', true)
+}
+
+/// Security event types for audit logging
+enum AuditLogEventType {
+  // CRUD Operations
+  CREATE @map("create")
+  UPDATE @map("update")
+  DELETE @map("delete")
+  ARCHIVE @map("archive")
+  RESTORE @map("restore")
+  
+  // Authentication Events
+  LOGIN @map("login")
+  LOGOUT @map("logout")
+  LOGIN_FAILED @map("login_failed")
+  SESSION_EXPIRED @map("session_expired")
+  SESSION_REVOKED @map("session_revoked")
+  
+  // Account Events
+  ACCOUNT_CREATED @map("account_created")
+  ACCOUNT_UPDATED @map("account_updated")
+  ACCOUNT_DELETED @map("account_deleted")
+  
+  // Permission Events
+  PERMISSION_GRANTED @map("permission_granted")
+  PERMISSION_REVOKED @map("permission_revoked")
+  ACCESS_DENIED @map("access_denied")
+  
+  // Password Events
+  PASSWORD_CHANGED @map("password_changed")
+  PASSWORD_RESET @map("password_reset")
+  PASSWORD_CHANGE_REQUIRED @map("password_change_required")
+  
+  // Security Events
+  SUSPICIOUS_ACTIVITY @map("suspicious_activity")
+  ERROR @map("error")
+
+  @@map("audit_log_event_type_enum")
+  @@schema("auth")
+}
+
+enum AuditLogResourceType {
+  USER @map("user")
+  SESSION @map("session")
+  PERMISSION @map("permission")
+  WORKSPACE @map("workspace")
+  CLIENT @map("client")
+  LOCATION @map("location")
+  VERIFICATION @map("verification")
+  OAUTH_ACCOUNT @map("oauth_account")
+  FILE @map("file")
+  INCIDENT @map("incident")
+  GUARD @map("guard")
+  DEVICE @map("device")
+  SETTING @map("setting")
+  SECURITY_EVENT @map("security_event")
+  AUTH_ERROR @map("auth_error")
+
+  @@map("audit_log_resource_type_enum")
+  @@schema("auth")
+}
+
+enum AuditSeverityLevel {
+  INFO @map("info")
+  WARNING @map("warning")
+  ERROR @map("error")
+  CRITICAL @map("critical")
+  ALERT @map("alert")
+  
+  @@map("audit_severity_level_enum")
+  @@schema("auth")
+}

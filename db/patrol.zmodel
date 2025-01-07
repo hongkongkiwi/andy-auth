@@ -1,0 +1,121 @@
+import "./shared.zmodel"
+import "./client.zmodel"
+import "./incident.zmodel"
+import "./auth.zmodel"
+import "./object-storage-file.zmodel"
+import "./workspace.zmodel"
+
+/// Physical patrol for a client
+model Patrol extends Base, Id, Auditable, SchemaWorkspace {
+  /// Display name of the patrol
+  name String @length(1, 100)
+  /// Optional patrol description
+  description String? @length(0, 500)
+  /// Current patrol status
+  status EntityStatus @default(ACTIVE)
+  /// Physical address information
+  address GooglePlacesAutocomplete? @json
+  /// Patrol configuration settings
+  patrolSettings Json? @map("patrol_settings")
+
+  // Relationships
+  /// Parent client
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId String @map("client_id")
+
+  incidents Incident[]
+  members ResourceMember[]
+
+  @@index([clientId])
+  @@unique([clientId, name])
+
+  @@map("patrols")
+
+  // Deny all actions if user is not active/logged in
+  @@deny('all', (
+    auth() == null || 
+    auth().status != ACTIVE
+  ))
+
+  // Allow all actions if user is platform admin
+  @@allow('all', (
+    auth().status == ACTIVE ||
+    auth().isPlatformAdmin
+  ))
+
+  @@allow('create', (
+    // Allow users with ADMIN, OWNER, or MANAGER role in the client to create patrols
+    this.client.members?[
+      auth() == user && (
+        CLIENT_PATROLS in permissions ||
+        role == ADMIN || 
+        role == OWNER ||
+        role == MANAGER
+      )
+    ]
+  ))
+
+  @@allow('read', (
+    // Allow users who are members of the workspace with appropriate permissions
+    this.client.workspace.members?[
+      this.client.workspace.status == ACTIVE &&
+      auth() == user && (
+        // User must have CLIENT_PATROLS permission or be an ADMIN or MANAGER
+        CLIENT_PATROLS in permissions ||
+        role == ADMIN || 
+        role == MANAGER
+      )
+    ] ||
+    // Allow users who are members of the client with appropriate permissions
+    this.client.members?[
+      this.client.status == ACTIVE &&
+      auth() == user && (
+        // User must have CLIENT_PATROLS permission or be an ADMIN, MANAGER, or VIEWER
+        CLIENT_PATROLS in permissions ||
+        role == ADMIN ||
+        role == MANAGER ||
+        role == VIEWER
+      )
+    ] ||
+    // Allow users who are members of the patrol with appropriate permissions
+    this.members?[
+      auth() == user && (
+        // User must have PATROL_INCIDENTS permission or be an ADMIN, MANAGER, or VIEWER
+        CLIENT_PATROLS in permissions || 
+        role == ADMIN ||
+        role == MANAGER ||
+        role == VIEWER
+      )
+    ]
+  ))
+
+  @@allow('update', (
+    // Allow users with ADMIN, OWNER, or MANAGER role in the client to update patrols
+    this.client.members?[
+      auth() == user && (
+        CLIENT_PATROLS in permissions ||
+        role == ADMIN || 
+        role == OWNER ||
+        role == MANAGER
+      )
+    ]
+  ))
+
+  @@allow('delete', (
+    // Allow users with ADMIN or OWNER role in the client to delete patrols
+    this.client.members?[
+      auth() == user && (
+        CLIENT_PATROLS in permissions ||
+        role == ADMIN || 
+        role == OWNER
+      )
+    ]
+  ))
+
+  @@deny('create', (
+    // Check parent client status
+    this.client.status != ACTIVE ||
+    // Check workspace status
+    this.client.workspace.status != ACTIVE
+  ))
+}

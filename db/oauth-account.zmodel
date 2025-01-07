@@ -1,0 +1,139 @@
+import "./shared.zmodel"
+import "./user.zmodel"
+import "./auth.zmodel"
+import "./auth-session.zmodel"
+import "./user.zmodel"
+
+/// Tracks OAuth provider accounts linked to users
+model OAuthAccount extends Base, Id, Auditable, SchemaAuth {
+  /// OAuth provider type (e.g., 'google', 'github')
+  provider String
+  /// Provider-specific account identifier
+  providerAccountId String @map("provider_account_id")
+  /// OAuth access token
+  accessToken String? @map("access_token")
+  /// OAuth refresh token
+  refreshToken String? @map("refresh_token")
+  /// Access token expiration
+  expiresAt DateTime? @map("expires_at")
+  /// OAuth scope permissions
+  scope String? @map("scope")
+  /// ID token for OpenID Connect
+  idToken String? @map("id_token")
+  /// Token type (e.g., 'bearer')
+  tokenType String? @map("token_type")
+  /// Session state
+  sessionState String? @map("session_state")
+  
+  /// Referenced user
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @map("user_id")
+
+  @@unique([provider, providerAccountId])
+
+  @@index([userId])
+  @@index([provider])
+
+  @@map("oauth_accounts")
+
+  // // Validate required fields on create
+  // // @@validate(provider.length > 0, "Provider cannot be empty")
+  // // @@validate(providerAccountId.length > 0, "Provider account ID cannot be empty")
+
+  // Deny all actions if user is not active/logged in
+  @@deny('all', (
+    auth() == null || 
+    auth().status != ACTIVE
+  ))
+
+  // Allow all actions if user is platform admin
+  @@allow('all', (
+    auth() == user ||
+    auth().status == ACTIVE ||
+    auth().isPlatformAdmin
+  ))
+
+  // Deny all actions if user is not active/logged in or if referenced user is not active
+  @@deny('all', (
+    user.status != ACTIVE
+  ))
+
+  // Only allow account creation during OAuth flow or by platform admin
+  @@allow('create', (
+    // User can only create their own OAuth links
+    auth() == user
+  ))
+
+  // Allow reading only user's own OAuth accounts or platform admin
+  @@allow('read', (
+    auth() == user
+  ))
+
+  // Restrict updates to owner or admin, and only for non-critical fields
+  @@allow('update', (
+    // Only allow updating tokens and expiration
+    future().provider == provider &&
+    future().providerAccountId == providerAccountId &&
+    future().userId == userId
+  ))
+
+  // Allow deletion by owner or platform admin
+  @@allow('delete', (
+    auth() == user && 
+    // Ensure user has either:
+    // 1. A password set for direct login, or
+    // 2. At least one other OAuth account remaining
+    (
+      user.password != null || 
+      user.oauthAccounts?[id != this.id]
+    )
+  ))
+
+  // Prevent modification of critical fields after creation
+  @@deny('update', (
+    future().provider != provider ||
+    future().providerAccountId != providerAccountId ||
+    future().userId != userId
+  ))
+
+  // // Global status check for resources
+  // @@deny('all', 
+  //   status == DELETED ||
+  //   workspace?.status == DELETED ||
+  //   client?.status == DELETED
+  // )
+}
+
+
+
+/// OAuth provider options
+enum OAuthProvider {
+  /// Google authentication
+  GOOGLE @map("google")
+  /// GitHub authentication
+  GITHUB @map("github")
+  /// Microsoft authentication
+  MICROSOFT @map("microsoft")
+  /// Apple authentication
+  APPLE @map("apple")
+
+  @@map("oauth_provider_enum")
+  @@schema("auth")
+}
+
+/// OAuth scope permissions
+enum OAuthScope {
+  /// Access to email
+  EMAIL @map("email")
+  /// Access to profile information
+  PROFILE @map("profile")
+  /// OpenID Connect
+  OPENID @map("openid")
+  /// Calendar access
+  CALENDAR @map("calendar")
+  /// Drive/storage access
+  DRIVE @map("drive")
+
+  @@map("oauth_scope_enum")
+  @@schema("auth")
+}

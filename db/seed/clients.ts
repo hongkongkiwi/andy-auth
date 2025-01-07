@@ -1,30 +1,34 @@
-import { PrismaClient, Client, Workspace } from '@prisma/client';
+import { PrismaClient, EntityStatus, Client, Workspace } from '@prisma/client';
 import { faker } from '@faker-js/faker';
 import { createId } from '@paralleldrive/cuid2';
+import { Prisma } from '@prisma/client';
 
 interface SeedClientsParams {
   workspaces: Workspace[];
   count: number;
 }
 
-const generateSettings = () => ({
+const generateSettings = (): Prisma.JsonValue => ({
   theme: faker.helpers.arrayElement(['light', 'dark', 'system']),
-  table: {
-    pageSize: faker.number.int({ min: 10, max: 100 }),
-    columnVisibility: {}
-  },
-  notifications: {
-    email: true,
-    push: true,
-    inApp: true
-  }
+  locale: 'en-US',
+  timezone: 'UTC',
+  dateFormat: 'YYYY-MM-DD',
+  tablePageSize: faker.number.int({ min: 10, max: 100 }),
+  navigationCollapsed: false,
+  navigationFavorites: []
 });
 
-const generateAddress = () => ({
+const generateAddress = (): Prisma.JsonValue => ({
   placeId: createId(),
   formattedAddress: faker.location.streetAddress(true),
   latitude: Number(faker.location.latitude()),
   longitude: Number(faker.location.longitude()),
+  streetNumber: faker.location.buildingNumber(),
+  route: faker.location.street(),
+  locality: faker.location.city(),
+  administrativeAreaLevel1: faker.location.state(),
+  country: faker.location.country(),
+  postalCode: faker.location.zipCode(),
   raw: null
 });
 
@@ -44,13 +48,13 @@ export const seedClients = async (
           name: faker.company.name(),
           description: faker.company.catchPhrase(),
           logoUrl: faker.image.urlLoremFlickr({ category: 'business' }),
-          status: 'ACTIVE',
-          settings: generateSettings(),
-          address: generateAddress(),
+          status: EntityStatus.ACTIVE,
+          settings: generateSettings() as Prisma.InputJsonValue,
+          address: generateAddress() as Prisma.InputJsonValue,
           workspaceId: workspace.id,
-          maxLocations: faker.number.int({
+          maxPatrols: faker.number.int({
             min: 1,
-            max: workspace.maxLocationsPerClient ?? 10
+            max: 10
           })
         }
       });

@@ -1,21 +1,25 @@
-// Base types and models
+// Base types and models must come first
 import "./shared.zmodel"
-import "./base.zmodel"
 
-// Auth and permissions must come first
+// Then auth
 import "./auth.zmodel"
 
-// Storage depends on auth
-import "./storage.zmodel"
-
-// Feature models
-import "./workspace.zmodel"
+// Then the rest...
 import "./client.zmodel"
-import "./location.zmodel"
+import "./patrol.zmodel"
+import "./workspace.zmodel"
+
+import "./object-storage-file.zmodel"
 import "./incident.zmodel"
 
 // Development models
 import "./seed-execution.zmodel"
+
+import "./audit-log.zmodel"
+import "./auth-session.zmodel"
+import "./oauth-account.zmodel"
+import "./user.zmodel"
+import "./verification-token.zmodel"
 
 // Add datasource configuration at the top
 datasource db {
@@ -59,7 +63,7 @@ plugin trpc {
   zodSchemasImport = '../lib/zenstack/zod'
 }
 
-plugin zenstackZzod {
+plugin zenstackZod {
   provider = '@core/zod'
   compile = true
   output   = '../lib/zenstack/zod'

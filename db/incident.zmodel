@@ -1,9 +1,9 @@
 import "./shared.zmodel"
-import "./base.zmodel"
-import "./storage.zmodel"
 import "./auth.zmodel"
 import "./client.zmodel"
-import "./location.zmodel"
+import "./object-storage-file.zmodel"
+import "./patrol.zmodel"
+import "./workspace.zmodel"
 
 /// Status options for incident tracking
 enum IncidentStatus {
@@ -20,67 +20,6 @@ enum IncidentStatus {
 
   @@map("incident_status_enum")
   @@schema("workspace")
-}
-
-/// Security incident record
-model Incident extends BaseModel, AuditableModel, SchemaWorkspace {
-  /// Incident title/summary
-  title String @length(1, 200)
-  /// Detailed incident description
-  description String? @length(0, 2000)
-  /// Current incident status
-  status IncidentStatus @default(REPORTED)
-  /// When the incident occurred
-  occurredAt DateTime @map("occurred_at")
-  /// Address where incident occurred
-  address GooglePlacesAutocomplete? @json
-  /// Related file attachments
-  attachments ObjectStorageFile[] @relation("IncidentAttachments")
-
-  /// Incident severity
-  severity IncidentSeverity @default(MEDIUM)
-  /// Incident category
-  category IncidentCategory @default(OTHER)
-
-  /// Time to first response in minutes
-  responseTime Int? @map("response_time")
-  /// Time to resolution in minutes
-  resolutionTime Int? @map("resolution_time")
-
-  /// Assigned user for handling the incident
-  assignedTo PlatformUser? @relation("AssignedIncidents", fields: [assignedToId], references: [id])
-  assignedToId String? @map("assigned_to_id")
-
-  /// When the incident was assigned
-  assignedAt DateTime? @map("assigned_at")
-
-  /// Priority level (1-5)
-  priority Int? @gte(1) @lte(5)
-
-  /// Due date for resolution
-  dueDate DateTime? @map("due_date")
-
-  /// Tags for categorization
-  tags String[]
-
-  /// Related incidents
-  relatedIncidents Incident[] @relation("RelatedIncidents")
-  relatedToIncidents Incident[] @relation("RelatedIncidents")
-
-  /// Client where incident occurred
-  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  clientId String @map("client_id")
-
-  /// Location where incident occurred
-  location Location @relation(fields: [locationId], references: [id])
-  locationId String @map("location_id")
-
-  @@index([status, severity])
-  @@index([assignedToId])
-  @@index([dueDate])
-  
-  @@map("incident")
-  @@allow('all', true)
 }
 
 /// Severity levels for incidents
@@ -111,4 +50,148 @@ enum IncidentCategory {
 
   @@map("incident_category_enum")
   @@schema("workspace")
-} 
+}
+
+/// Security incident record
+model Incident extends Base, Id, Auditable, SchemaWorkspace {
+  /// Incident title/summary
+  title String @length(1, 200)
+  /// Detailed incident description
+  description String? @length(0, 2000)
+  /// Current incident status
+  status IncidentStatus @default(REPORTED)
+  /// When the incident occurred
+  occurredAt DateTime @map("occurred_at")
+  /// Address where incident occurred
+  address GooglePlacesAutocomplete? @json
+  /// Related file attachments
+  attachments ObjectStorageFile[] @relation("IncidentAttachments")
+
+  /// Incident severity
+  severity IncidentSeverity @default(MEDIUM)
+  /// Incident category
+  category IncidentCategory @default(OTHER)
+
+  /// Time to first response in minutes
+  responseTime Int? @map("response_time")
+  /// Time to resolution in minutes
+  resolutionTime Int? @map("resolution_time")
+
+  /// When the incident was assigned
+  assignedAt DateTime? @map("assigned_at")
+
+  /// Priority level (1-5)
+  priority Int? @gte(1) @lte(5)
+
+  /// Due date for resolution
+  dueDate DateTime? @map("due_date")
+
+  /// Tags for categorization
+  tags String[]
+
+  /// Related incidents
+  relatedIncidents Incident[] @relation("RelatedIncidents")
+  relatedToIncidents Incident[] @relation("RelatedIncidents")
+
+  /// Client where incident occurred
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId String @map("client_id")
+
+  /// Patrol where incident occurred
+  patrol Patrol @relation(fields: [patrolId], references: [id])
+  patrolId String @map("patrol_id")
+
+  /// Add unique constraint
+  @@unique([clientId, title, occurredAt])
+
+  @@index([status, severity])
+  @@index([dueDate])
+
+  @@map("incident")
+
+  // Deny all actions if user is not active/logged in
+  @@deny('all', (
+    auth() == null || 
+    auth().status != ACTIVE
+  ))
+
+  // Allow all actions if user is platform admin
+  @@allow('all', (
+    auth().status == ACTIVE ||
+    auth().isPlatformAdmin
+  ))
+
+  // Updated permission rules based on auth.zmodel
+  @@allow('create', (
+    // Allow users with ADMIN, OWNER, or MANAGER role in the client to create incidents
+    this.client.members?[
+      client.status == ACTIVE &&
+      auth() == user && (
+        PATROL_INCIDENTS in permissions ||
+        role == ADMIN || 
+        role == OWNER ||
+        role == MANAGER
+      )
+    ]
+  ))
+
+  @@allow('read', (
+    // Allow users who are members of the workspace with appropriate permissions
+    this.client.workspace.members?[
+      workspace.status == ACTIVE &&
+      auth() == user && (
+        // User must have PATROL_INCIDENTS permission or be an ADMIN or MANAGER
+        PATROL_INCIDENTS in permissions ||
+        role == ADMIN || 
+        role == MANAGER
+      )
+    ] ||
+    // Allow users who are members of the client with appropriate permissions
+    this.client.members?[
+      client.status == ACTIVE &&
+      auth() == user && (
+        // User must have PATROL_INCIDENTS permission or be an ADMIN, MANAGER, or VIEWER
+        PATROL_INCIDENTS in permissions ||
+        role == ADMIN ||
+        role == MANAGER ||
+        role == VIEWER
+      )
+    ] ||
+    // Allow users who are members of the patrol with appropriate permissions
+    this.patrol.members?[
+      patrol.status == ACTIVE &&
+      auth() == user && (
+        // User must have PATROL_INCIDENTS permission or be an ADMIN, MANAGER, or VIEWER
+        PATROL_INCIDENTS in permissions || 
+        role == ADMIN ||
+        role == MANAGER ||
+        role == VIEWER
+      )
+    ]
+  ))
+
+  @@allow('update', (
+    // Allow users with ADMIN, OWNER, or MANAGER role in the client to update incidents
+    this.client.members?[
+      client.status == ACTIVE &&
+      auth() == user && (
+        PATROL_INCIDENTS in permissions ||
+        role == ADMIN || 
+        role == OWNER ||
+        role == MANAGER
+      )
+    ]
+  ))
+
+  @@allow('delete', (
+    // Allow users with ADMIN or OWNER role in the client to delete incidents
+    this.client.members?[
+      client.status == ACTIVE &&
+      auth() == user && (
+        PATROL_INCIDENTS in permissions ||
+        role == ADMIN || 
+        role == OWNER
+      )
+    ]
+  ))
+}

@@ -1,11 +1,27 @@
-import "./auth.zmodel"
-import "./base.zmodel"
 import "./shared.zmodel"
 import "./client.zmodel"
+import "./patrol.zmodel"
+import "./object-storage-file.zmodel"
+import "./auth.zmodel"
+import "./user.zmodel"
 
-// Models
-/// Customer organization workspace
-model Workspace extends BaseModel, AuditableModel, SchemaWorkspace {
+// Enums
+/// Status options for entities like workspaces, clients, and locations
+enum EntityStatus {
+  /// Fully operational
+  ACTIVE @map("active")
+  /// Fully operational
+  PENDING @map("pending")
+  /// Permanently disabled
+  DISABLED @map("disabled")
+  /// Marked for deletion
+  DELETED @map("deleted")
+
+  @@map("entity_status_enum")
+  @@schema("workspace")
+}
+
+model Workspace extends Base, Id, Auditable, SchemaWorkspace {
   /// Display name of the workspace
   name String @length(1, 100) @regex('^[\\w\\s-]+$')
   /// URL-friendly unique identifier
@@ -22,15 +38,75 @@ model Workspace extends BaseModel, AuditableModel, SchemaWorkspace {
   address GooglePlacesAutocomplete? @json
 
   // Relationships
+  members ResourceMember[]
   /// Client organizations
   clients Client[]
-  permissions Permission[] @relation("WorkspacePermissions")
 
   /// Workspace features
   features String[]
 
+  // Add owner relation
+  owner User? @relation("WorkspaceOwner", fields: [ownerId], references: [id])
+  ownerId String @map("owner_id")
+
   @@index([slug])
   @@map("workspace")
-  @@allow('all', true)
+
+  // Deny all actions if user is not active/logged in
+  @@deny('all', (
+    auth() == null || 
+    auth().status != ACTIVE
+  ))
+
+  // Allow all actions if user is platform admin
+  @@allow('all', (
+    auth().status == ACTIVE ||
+    auth().isPlatformAdmin
+  ))
+  
+  @@allow('read', (
+    this.members?[
+      auth() == user && (
+        WORKSPACE_SETTINGS in permissions ||
+        role == OWNER ||
+        role == ADMIN ||
+        role == MANAGER ||
+        role == VIEWER
+      )
+    ]
+  ))
+
+  @@allow('update', (
+    // Allow users with ADMIN, OWNER, or MANAGER role in the workspace to update workspaces
+    this.members?[
+      auth() == user && (
+        WORKSPACE_SETTINGS in permissions ||
+        role == ADMIN || 
+        role == OWNER ||
+        role == MANAGER
+      )
+    ]
+  ))
+
+  @@allow('delete', (
+    // Allow users with OWNER role to delete workspaces
+    this.members?[
+      auth() == user && (
+        role == OWNER
+      )
+    ]
+  ))
+
+  // Add resource limit checks
+  // @@deny('create', 
+  //   count(this.clients) >= this.maxClients
+  // ))
+
+  // Add ownership validation
+  @@deny('update', (
+    // Prevent owner changes except by platform admin
+    future().ownerId != ownerId && 
+    auth().isPlatformAdmin != true
+  ))
 }
 

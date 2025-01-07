@@ -1,0 +1,110 @@
+// import "./base.zmodel"
+// import "./shared.zmodel"
+// import "./incident.zmodel"
+// import "./storage.zmodel"
+// import "./workspace.zmodel"
+// import "./client.zmodel"
+// import "./location.zmodel"
+
+// // =================== AUDIT LOG TYPES ===================
+
+
+// // =================== AUTHENTICATION TYPES ===================
+
+
+// // =================== CORE AUTH MODELS ===================
+// /// Platform user model with authentication capabilities
+// model PlatformUser extends BaseModel, AuditableModel, SchemaAuth {
+//   // Identity & Contact
+//   emailAddress String? @email @unique @map("email_address")
+//   emailAddressVerifiedAt DateTime? @map("email_address_verified_at")
+//   phoneNumber String? @unique @map("phone_number")
+//   phoneNumberVerifiedAt DateTime? @map("phone_number_verified_at")
+//   name String
+
+//   // Authentication
+//   passwordHash String? @map("password_hash")
+//   passwordLastChanged DateTime? @map("password_last_changed")
+//   requirePasswordChange Boolean @default(false) @map("require_password_change")
+//   passwordResetAttempts Int @default(0) @map("password_reset_attempts")
+//   lockoutUntil DateTime? @map("lockout_until")
+//   mfaEnabled Boolean @default(false) @map("mfa_enabled")
+//   authenticationMethods AuthenticationMethod[]
+
+//   // Status & Security
+//   status PlatformUserStatus @default(ACTIVE)
+//   lastLoginAt DateTime? @map("last_login_at")
+//   failedLoginAttempts Int @default(0) @map("failed_login_attempts")
+//   lockedUntil DateTime? @map("locked_until")
+
+//   // Sessions & OAuth (keep these!)
+//   sessions AuthSession[]
+//   oauthAccounts OAuthAccount[]
+
+//   // Permissions (single relation)
+//   permissions Permission[]
+  
+//   // Incidents assigned to this user
+//   assignedIncidents Incident[] @relation("AssignedIncidents")
+
+//   // Profile
+//   personProfile PersonProfile? @relation(fields: [personProfileId], references: [id])
+//   personProfileId String? @map("person_profile_id") @unique
+//   profilePicture ObjectStorageFile? @relation("ProfilePicture", fields: [profilePictureId], references: [id])
+//   profilePictureId String? @map("profile_picture_id") @unique
+
+//   @@map("platform_users")
+//   @@allow('all', true)
+// }
+
+// /// Authentication session for a user
+// model AuthSession extends BaseModel, SchemaAuth {
+//   user PlatformUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+//   userId String @map("user_id")
+  
+//   token String @unique
+//   expiresAt DateTime @map("expires_at")
+//   lastActiveAt DateTime @map("last_active_at")
+  
+//   // Security context
+//   ipAddress String? @map("ip_address")
+//   userAgent String? @map("user_agent")
+//   deviceInfo DeviceInfo? @json
+//   geoLocation Json? @map("geo_location")
+  
+//   // Status
+//   isRevoked Boolean @default(false) @map("is_revoked")
+//   revokedAt DateTime? @map("revoked_at")
+  
+//   @@index([userId])
+//   @@map("auth_sessions")
+//   @@allow('all', true)
+// //  @@allow('all', auth().role == "ADMIN" || auth().userId == userId)
+// }
+
+
+
+// /// Verification token types
+// enum VerificationTokenType {
+//   EMAIL_VERIFICATION @map("email_verification")
+//   PHONE_VERIFICATION @map("phone_verification")
+//   PASSWORD_RESET @map("password_reset")
+//   ACCOUNT_DELETION @map("account_deletion")
+
+//   @@map("verification_token_type_enum")
+//   @@schema("auth")
+// }
+
+// /// Verification token for email/phone verification
+// model VerificationToken extends BaseModel, SchemaAuth {
+//   identifier String
+//   token String @unique
+//   type VerificationTokenType
+//   expiresAt DateTime @map("expires_at")
+
+//   @@unique([identifier, token])
+//   @@map("verification_tokens")
+//   @@allow('all', true)
+// }
+
+

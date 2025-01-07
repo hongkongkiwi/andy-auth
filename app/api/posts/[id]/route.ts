@@ -1,17 +1,13 @@
-import { createProtectedHandler } from '@/lib/auth/middleware/unified-permission-middleware';
-import { createWorkspaceModelPermission } from '@/lib/auth/utils/permission-utils';
+import { withZenStack } from '@/lib/auth/middleware/zenstack-middleware';
 
-export const GET = createProtectedHandler(
-  createWorkspaceModelPermission('workspace_id', 'Post', 'read'),
-  async (req) => {
-    const { zenstackDb } = req;
-    const id = req.nextUrl.pathname.split('/').pop();
+export const GET = withZenStack(async (req) => {
+  const { zenstackDb } = req;
+  const id = req.nextUrl.pathname.split('/').pop();
 
-    // ZenStack will automatically apply access policies
-    const post = await zenstackDb.post.findUnique({
-      where: { id }
-    });
+  // ZenStack will automatically apply access policies
+  const post = await zenstackDb.post.findUnique({
+    where: { id }
+  });
 
-    return Response.json(post);
-  }
-);
+  return Response.json(post);
+});

@@ -32,7 +32,7 @@ type UserSettings {
   navigationFavorites String[]
 }
 
-/// Emergency contact information
+// Emergency contact information
 type EmergencyContactInfo {
   name String
   relationship String
@@ -41,14 +41,14 @@ type EmergencyContactInfo {
   address Json?
 }
 
-/// User preferences for platform customization
+// User preferences for platform customization
 type UserPreferences {
   dashboard Json
   communication Json
   accessibility Json
 }
 
-/// Essential device information for login session tracking
+// Essential device information for login session tracking
 type DeviceInfo {
   // Core identifiers
   deviceId String? @length(1, 100)    // Generated fingerprint or session identifier
@@ -84,17 +84,53 @@ type StorageMetadata {
   metadata Json?
 }
 
-// Enums
-/// Status options for entities like workspaces, clients, and locations
-enum EntityStatus {
-  /// Fully operational
-  ACTIVE @map("active")
-  /// Permanently disabled
-  DISABLED @map("disabled")
-  /// Marked for deletion
-  DELETED @map("deleted")
+/// Base model with common fields
+abstract model Base {}
 
-  @@map("entity_status_enum")
+abstract model Id {
+  id String @id @default(cuid(2))
+}
+
+/// Base model with audit fields
+abstract model Auditable {
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+  version Int @default(1)
+  changeHistory Json?
+}
+
+/// Base model with schema designation for workspace models
+abstract model SchemaWorkspace {
   @@schema("workspace")
 }
 
+abstract model SchemaAuth {
+  @@schema("auth")
+}
+
+abstract model SchemaPublic {
+  @@schema("public")
+}
+
+abstract model SchemaDevelopment {
+  @@schema("development")
+}
+
+abstract model SchemaStorage {
+  @@schema("storage")
+}
+
+// Add soft delete protection
+// abstract model SoftDeleteProtection {
+//   @@deny('delete', auth().isPlatformAdmin != true)
+//   @@allow('update', (
+//     auth() != null &&
+//     auth().status == ACTIVE &&
+//     deletedAt == null && 
+//     auth().isPlatformAdmin
+//   ))
+// }

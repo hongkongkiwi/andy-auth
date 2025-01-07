@@ -1,69 +1,48 @@
-export class SeedError extends Error {
-  step: string;
-  context: Record<string, unknown>;
-
-  constructor(
-    message: string,
-    options: {
-      cause?: Error;
-      step: string;
-      context?: Record<string, unknown>;
-    }
-  ) {
-    super(message, { cause: options.cause });
-    this.name = 'SeedError';
-    this.step = options.step;
-    this.context = options.context ?? {};
-  }
-}
+import { Role, Permission, EntityStatus } from '@prisma/client';
 
 export interface SeedOptions {
+  seedUserId?: string;
   count?: number;
   workspaceCount?: number;
   clientsPerWorkspace?: number;
-  locationsPerClient?: number;
-  devicesPerClient?: number;
+  patrolsPerClient?: number;
   usersPerWorkspace?: number;
-  incidentsPerClient?: number;
+  incidentsPerPatrol?: number;
   seed?: number;
   verbose?: boolean;
   validateData?: boolean;
   constraints?: {
     minClientsPerWorkspace?: number;
     maxClientsPerWorkspace?: number;
-    minLocationsPerClient?: number;
-    maxLocationsPerClient?: number;
+    minPatrolsPerClient?: number;
+    maxPatrolsPerClient?: number;
   };
   permissionsPerUser?: number;
-  defaultPermissionRole?: string;
-  seedUserId?: string;
+  defaultRole?: Role;
+  defaultPermissions?: Permission[];
 }
 
 export const DEFAULT_COUNTS = {
   workspaceCount: 5,
   clientsPerWorkspace: 3,
-  locationsPerClient: 2,
+  patrolsPerClient: 2,
   usersPerWorkspace: 3,
-  incidentsPerClient: 2,
+  incidentsPerPatrol: 2,
   DEFAULT_SEED: 123,
   permissionsPerUser: 3
 } as const;
 
-export interface WorkspaceSeedOptions extends SeedOptions {}
-
 export interface SeedCounts {
   workspaces: number;
   clients: number;
-  locations: number;
-  platformUsers: number;
+  patrols: number;
+  users: number;
   incidents: number;
   verificationTokens: number;
   authSessions: number;
   oauthAccounts: number;
-  storageFiles: number;
-  workspacePermissions: number;
-  clientPermissions: number;
-  locationPermissions: number;
+  objectStorageFiles: number;
+  resourceMembers: number;
 }
 
 // In the seeding functions, we should track and return these counts

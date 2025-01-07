@@ -1,13 +1,14 @@
 import {
   PrismaClient,
-  AuditLogEventType,
+  VerificationTokenType,
   AuditLogResourceType,
-  AuditSeverityLevel
+  AuditLogEventType,
+  AuditSeverityLevel,
+  Prisma
 } from '@prisma/client';
 import { createId } from '@paralleldrive/cuid2';
 import { faker } from '@faker-js/faker';
 import { SeedOptions } from './types';
-import { VerificationTokenType } from '@prisma/client';
 
 export const seedVerificationTokens = async (
   prisma: PrismaClient,
@@ -19,8 +20,8 @@ export const seedVerificationTokens = async (
         id: createId(),
         identifier: faker.internet.email().toLowerCase(),
         token: createId(),
-        expiresAt: faker.date.future(),
-        type: VerificationTokenType.EMAIL_VERIFICATION
+        type: VerificationTokenType.EMAIL_VERIFICATION,
+        expiresAt: faker.date.future()
       }
     });
 
@@ -37,7 +38,7 @@ export const seedVerificationTokens = async (
         metadata: {
           type: token.type,
           expiresAt: token.expiresAt
-        }
+        } as Prisma.InputJsonValue
       }
     });
 

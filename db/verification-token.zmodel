@@ -1,0 +1,25 @@
+import "./shared.zmodel"
+
+/// Verification token for email/phone verification
+model VerificationToken extends Base, Id, Auditable, SchemaAuth {
+  identifier String
+  token String @unique
+  type VerificationTokenType
+  expiresAt DateTime @map("expires_at")
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+  
+  @@allow('all', true)
+}
+
+/// Verification token types
+enum VerificationTokenType {
+  EMAIL_VERIFICATION @map("email_verification")
+  PHONE_VERIFICATION @map("phone_verification")
+  PASSWORD_RESET @map("password_reset")
+  ACCOUNT_DELETION @map("account_deletion")
+
+  @@map("verification_token_type_enum")
+  @@schema("auth")
+}

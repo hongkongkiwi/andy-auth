@@ -1,0 +1,217 @@
+import "./shared.zmodel"
+import "./auth.zmodel"
+import "./auth-session.zmodel"
+import "./workspace.zmodel"
+import "./object-storage-file.zmodel"
+import "./oauth-account.zmodel"
+
+/// Core user model with authentication, profile, and relationship data
+model User extends Base, Id, Auditable, SchemaAuth {
+  // Authentication fields
+  /// Primary email address for account access and notifications
+  email String @unique
+  /// When email verification was completed
+  emailVerified DateTime?
+  // Internal password hash - omitted from API
+  password String? @omit
+  /// Contact phone number for account recovery and 2FA
+  phoneNumber String? @unique
+  /// When phone verification was completed
+  phoneVerified DateTime?
+  /// MFA status flag
+  mfaEnabled Boolean @default(false)
+  // Internal MFA configuration
+  mfaSecret String? @omit
+  // Recovery codes for account access
+  backupCodes String[] @omit
+  /// Last successful authentication timestamp
+  lastLoginAt DateTime?
+  /// Account status
+  status UserStatus @default(ACTIVE)
+  
+  authenticationMethods AuthenticationMethod[]
+
+  /// Platform administrator access flag
+  isPlatformAdmin Boolean @default(false)
+  
+  userProfile UserProfile?
+
+  // Profile information
+  /// Display name for the user
+  name String?
+  // Legacy profile image field
+  image String?
+  
+  // Relationships
+  /// Active user sessions
+  sessions AuthSession[]
+  /// Workspaces where user is the owner
+  ownedWorkspaces Workspace[] @relation("WorkspaceOwner")
+  
+  /// Profile picture file reference
+  profilePicture ObjectStorageFile? @relation("UserProfilePicture", fields: [profilePictureId], references: [id])
+  // Internal profile picture file ID
+  profilePictureId String? @unique @map("profile_picture_id")
+
+  /// Workspace memberships
+  memberships ResourceMember[]
+
+  /// OAuth accounts linked to this user
+  oauthAccounts OAuthAccount[]
+
+  // Performance indexes
+  @@index([email])
+  @@index([phoneNumber])
+  @@index([status])
+
+  @@map("users")
+
+  // Permission rules
+  // Anyone can create a user
+  @@allow('create', true)
+
+  // Deny all actions if user is not active/logged in
+  @@deny('read,update,delete', (
+    auth() == null || 
+    auth().status != ACTIVE
+  ))
+
+  // Allow all actions if user is platform admin
+  @@allow('read,update,delete', (
+    auth().status == ACTIVE ||
+    auth().isPlatformAdmin
+  ))
+
+  @@allow('read', (
+    // Can read if auth user is the target user
+    auth() == this ||
+    // Can read if auth user is a member of the same workspace and has permission
+    this.memberships?[
+      // Workspace must be active
+      workspace.status == ACTIVE &&
+      // Check if the auth user is a member of the same workspace
+      workspace.members?[auth() == user] && 
+      // Check if the user has permission
+      (
+        WORKSPACE_MEMBERS in permissions || 
+        role == ADMIN || 
+        role == MANAGER
+      )
+    ] ||
+    // Can read if auth user is a member of the same client and has permission
+    this.memberships?[
+      // Check if the user is a member of the client
+      clientId != null &&
+        // Client must be active
+      client.status == ACTIVE &&
+      // Check if the auth user is a member of the same client
+      client.members?[auth() == user] && 
+      // Check if the user has permission
+      (
+        CLIENT_MEMBERS in permissions ||
+        role == ADMIN || 
+        role == MANAGER
+      )
+    ] ||
+    // Can read if auth user is a member of the same patrol and has permission
+    this.memberships?[
+      // Check if the user is a member of the patrol
+      patrolId != null &&
+      // Patrol must be active
+      patrol.status == ACTIVE &&
+      // Check if the auth user is a member of the same patrol
+      patrol.members?[auth() == user] && 
+      // Check if the user has permission
+      (
+        PATROL_MEMBERS in permissions || 
+        role == ADMIN || 
+        role == MANAGER
+      )
+    ]
+  ))
+
+  // Allow updates if user has EDITOR or higher permissions
+  @@allow('update', (
+    // Can update if auth user is the target user
+    auth() == this
+  ))
+
+  // Only platform admins can update their own admin status
+  @@deny('update', (
+    // Prevent removal of admin status unless performed by another platform admin
+    isPlatformAdmin && 
+    future().isPlatformAdmin == false && 
+    auth().isPlatformAdmin == false
+  ))
+
+  // Only platform admins can delete users
+  @@allow('delete', (
+    auth().isPlatformAdmin
+  ))
+
+  // Add denial rule to prevent non-platform admins from granting platform admin status
+  @@deny('update', (
+    auth().isPlatformAdmin != true &&
+    future().isPlatformAdmin == true
+  ))
+
+  // Add denial rule to prevent inactive users from updating their status
+  @@deny('update', (
+    status != ACTIVE && 
+    future().status == ACTIVE && 
+    auth().isPlatformAdmin != true
+  ))
+
+  // Add permission validation
+  // @@validate(future().permissions.length <= 10, "Maximum 10 permissions allowed per role")
+  // @@validate(
+  //   !WORKSPACE_BILLING in permissions) || role in [OWNER, ADMIN],
+  //   "Billing permission requires OWNER or ADMIN role"
+  // )
+}
+
+/// Authentication methods supported by the platform
+enum AuthenticationMethod {
+  /// Standard password authentication
+  PASSWORD @map("password")
+  /// One-time password via SMS/phone
+  PHONE_OTP @map("phone_otp")
+  /// Magic link via email
+  MAGIC_LINK @map("magic_link")
+  /// OAuth provider authentication
+  OAUTH @map("oauth")
+  /// WebAuthn/passkey authentication
+  WEBAUTHN @map("webauthn")
+
+  @@map("authentication_method_enum")
+  @@schema("auth")
+}
+
+// Person profile information
+model UserProfile extends Base, Id, Auditable, SchemaAuth {
+  firstName String @map("first_name")
+  lastName String? @map("last_name")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String? @unique
+  
+  @@map("user_profiles")
+  @@allow('all', true)
+}
+
+/// User status options
+enum UserStatus {
+  /// User is active and can access the platform
+  ACTIVE @map("active")
+  /// User is inactive and cannot access the platform
+  INACTIVE @map("inactive")
+  /// User is suspended due to violations
+  SUSPENDED @map("suspended")
+  /// User account is pending verification
+  PENDING @map("pending")
+  /// User account has been deleted
+  DELETED @map("deleted")
+
+  @@map("user_status_enum")
+  @@schema("auth")
+}

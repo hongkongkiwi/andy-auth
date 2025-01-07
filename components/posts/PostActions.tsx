@@ -1,19 +1,17 @@
-import { useUnifiedPermissions } from '@/lib/auth/hooks/useUnifiedPermissions';
-import { createWorkspaceModelPermission } from '@/lib/auth/utils/permission-utils';
+import { useZenStackClient } from '@/lib/auth/hooks/useZenStackClient';
 
-export const PostActions = ({
-  workspaceId,
-  postId
-}: {
-  workspaceId: string;
-  postId: string;
-}) => {
-  const { checkUnifiedPermission } = useUnifiedPermissions();
+export const PostActions = ({ postId }: { postId: string }) => {
+  const { getClient } = useZenStackClient();
 
-  const canEditPost = async () => {
-    return checkUnifiedPermission(
-      createWorkspaceModelPermission(workspaceId, 'Post', 'update')
-    );
+  const updatePost = async (data: any) => {
+    const client = getClient();
+    if (!client) return;
+
+    // ZenStack will automatically check permissions
+    return client.post.update({
+      where: { id: postId },
+      data
+    });
   };
 
   // Rest of component...
