@@ -1,58 +1,92 @@
 import { PrismaClient } from '@prisma/client';
-import { DB_RETRY_CONFIG } from './constants';
-import {
-  DbError,
-  DbErrorCode,
-  isRetryableError,
-  mapPrismaError
-} from './errors';
+import { enhance } from '@zenstackhq/runtime';
+import type { EnhancedPrismaClient } from './types';
+import { isDevelopment } from '@/lib/utils/env';
+import { getServerSession } from '@/lib/auth/server';
+import type { EnhanceOptions } from './types';
+import { DatabaseError } from './types';
 
-export const prismaBase = new PrismaClient();
-
-const prismaClientWithRetry = prismaBase.$extends({
-  client: {
-    async withRetry<T>(
-      fn: () => Promise<T>,
-      maxRetries = DB_RETRY_CONFIG.EXTENDED_MAX_RETRIES
-    ): Promise<T> {
-      let lastError: Error | undefined;
-
-      for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        try {
-          return await fn();
-        } catch (error) {
-          lastError = error instanceof Error ? error : new Error(String(error));
-
-          if (!isRetryableError(lastError)) {
-            throw mapPrismaError(lastError);
-          }
-
-          if (attempt === maxRetries) {
-            throw new DbError(DbErrorCode.MAX_RETRIES_EXCEEDED, {
-              attempts: attempt,
-              maxRetries
-            });
-          }
-
-          await new Promise((resolve) =>
-            setTimeout(resolve, DB_RETRY_CONFIG.EXTENDED_DELAY * attempt)
-          );
-        }
-      }
-
-      throw new DbError(DbErrorCode.OPERATION_FAILED, {
-        error: lastError?.message
-      });
-    }
-  }
-});
-
-type PrismaClientWithRetry = typeof prismaClientWithRetry;
-
+/**
+ * Global type declarations for development hot reloading support
+ * Prevents multiple client instances during development
+ */
 declare global {
-  var prisma: PrismaClientWithRetry | undefined;
+  var prisma: EnhancedPrismaClient | undefined;
+  var basePrisma: PrismaClient | undefined;
 }
 
-export { prismaClientWithRetry as prisma };
-if (process.env.NODE_ENV !== 'production')
-  globalThis.prisma = prismaClientWithRetry;
+/**
+ * Base Prisma client instance with logging configuration
+ * Uses global instance in development to prevent connection issues
+ */
+const basePrisma =
+  globalThis.basePrisma ??
+  new PrismaClient({
+    log: isDevelopment() ? ['error', 'warn'] : ['error']
+  });
+
+/**
+ * Enhanced Prisma client with Zenstack features
+ * Provides access control and audit logging capabilities
+ */
+const enhancedPrisma = enhance(basePrisma, {
+  kinds: ['policy', 'password'],
+  logPrismaQuery: isDevelopment(),
+  errorTransformer: (error: Error) =>
+    new DatabaseError('Custom error message', error)
+}) as EnhancedPrismaClient;
+
+// Development hot reloading support
+if (isDevelopment()) {
+  globalThis.basePrisma = basePrisma;
+  globalThis.prisma = enhancedPrisma;
+}
+
+/**
+ * Default enhanced client for direct database access
+ * Use this when you don't need user context or retries
+ */
+export const prisma = enhancedPrisma;
+
+/**
+ * Get a fresh enhanced client instance
+ * Useful when you need a clean client without existing context
+ */
+export const getBaseEnhancedPrisma = (options: EnhanceOptions = {}) => {
+  const enhanced = enhance(basePrisma, {
+    ...options,
+    kinds: ['policy', 'password']
+  });
+  return enhanced as EnhancedPrismaClient;
+};
+
+/**
+ * Get the raw Prisma client without enhancements
+ * Use this when you need direct database access without Zenstack features
+ */
+export const getBasePrisma = () => basePrisma;
+
+/**
+ * Gracefully disconnect from the database
+ * Important for proper cleanup and resource management
+ */
+export const disconnect = async () => {
+  await basePrisma.$disconnect();
+};
+
+// Cleanup handler for development
+if (isDevelopment()) {
+  process.on('beforeExit', disconnect);
+}
+
+/**
+ * Get a protected database client with user context
+ */
+export const getProtectedDb = async () => {
+  const session = await getServerSession();
+  const userId = session?.user?.id || 'anonymous';
+
+  return getBaseEnhancedPrisma({
+    user: { id: userId }
+  });
+};

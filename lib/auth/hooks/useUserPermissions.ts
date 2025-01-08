@@ -1,41 +1,32 @@
 import { useCallback } from 'react';
-import { PermissionType } from '@prisma/client';
 import { usePermissions } from './usePermissions';
-import { useCachedPermissions } from './useCachedPermissions';
+import type { Role } from '@prisma/client';
 
 export const useUserPermissions = (userId: string) => {
-  const { checkPermission } = usePermissions();
-  const { checkCachedPermission } = useCachedPermissions();
-
-  const getUserPermissions = useCallback(async () => {
-    const response = await fetch(`/api/auth/users/${userId}/permissions`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch user permissions');
-    }
-    return response.json();
-  }, [userId]);
+  const { check, checkRole } = usePermissions();
 
   const canManageUser = useCallback(async () => {
-    // Platform admins can manage all users
-    const isPlatformAdmin = await checkCachedPermission(
-      PermissionType.PLATFORM_ADMIN
-    );
-    if (isPlatformAdmin) return true;
+    const result = await check({
+      model: 'user',
+      operation: 'update',
+      data: { id: userId }
+    });
+    return result.granted;
+  }, [userId, check]);
 
-    // Workspace admins can manage users in their workspace
-    const workspacePermissions = await getUserPermissions();
-    return workspacePermissions.some(
-      (p: any) => p.type === PermissionType.WORKSPACE_ADMIN
-    );
-  }, [userId, checkCachedPermission, getUserPermissions]);
-
-  const canImpersonateUser = useCallback(async () => {
-    return checkPermission(PermissionType.PLATFORM_ADMIN);
-  }, [checkPermission]);
+  const hasRole = useCallback(
+    async (role: Role) => {
+      const result = await checkRole({
+        role,
+        resourceId: userId
+      });
+      return result.granted;
+    },
+    [userId, checkRole]
+  );
 
   return {
-    getUserPermissions,
     canManageUser,
-    canImpersonateUser
+    hasRole
   };
 };

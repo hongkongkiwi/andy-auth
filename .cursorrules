@@ -109,6 +109,16 @@ Error Handling:
   - Implement proper validation error handling
   - Use proper error logging
 
+Database Operations:
+  - Use transactions for operations that:
+    - Modify multiple records
+    - Require data consistency across tables
+    - Need atomic updates
+  - Single-record operations can use direct queries
+  - Follow retry patterns for retryable errors
+  - Implement proper error handling for database operations
+  - Use proper timeouts for queries and transactions
+
 Data Model Relationships:
   User -> Workspace:
     - User has zero or more Workspaces
@@ -126,17 +136,17 @@ Data Model Relationships:
       - WRITE: Can edit client information
       - ADMIN: Full client control
 
-  Client -> Location:
-    - Client has zero or more Locations
-    - User must have ClientLocationPermissions to access a Location
-    - ClientLocationPermissions:
-      - READ: Can view location details
-      - WRITE: Can edit location information
-      - ADMIN: Full location control
+  Client -> Patrol:
+    - Client has zero or more Patrols
+    - User must have ClientPatrolPermissions to access a Patrol
+    - ClientPatrolPermissions:
+      - READ: Can view patrol details
+      - WRITE: Can edit patrol information
+      - ADMIN: Full patrol control
 
   Permission Inheritance:
     - Workspace ADMIN can manage all Clients in Workspace
-    - Client ADMIN can manage all Locations for that Client
+    - Client ADMIN can manage all Patrols for that Client
     - Permissions do not automatically cascade down
     - Each level requires explicit permission grants
 
@@ -149,9 +159,12 @@ References:
     - Zustand: https://docs.pmnd.rs/zustand
     - Better-Auth: https://www.better-auth.com
 
-  Zenstack Imports:
-    - '@zenstackhq/runtime/models': Types, enums
-    - '@zenstack/zod/models': Zod schemas
+  Imports:
+    - '@prisma/client': enums
+    - '@zenstackhq/runtime/models': Types
+    - '@zenstackhq/runtime/zod/models': Zod schemas
     - '@zenstack/ui/forms': Form generation
     - '@zenstack/ui/crud': CRUD operations
     - 'better-auth': Authentication
+
+# Note: Ensure that your implementation of @db permissions is complete and functioning without placeholders.

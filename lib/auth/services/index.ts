@@ -5,7 +5,10 @@
  * @module auth/services
  */
 
-export * from './permission-service';
+// Only export what's needed
 export * from './audit-service';
-export * from './session-service';
-export * from './user-service';
+export * from './email-verification-service';
+export * from './security-service';
+export * from './user-deletion-service';
+export * from './password-service';
+export * from './phone-auth-service';

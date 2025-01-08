@@ -1,219 +1,235 @@
-import { prisma } from '@/lib/db';
+import { transaction, getProtectedDb } from '@/lib/db/index';
 import { createAuditLog } from './audit-service';
 import {
+  Prisma,
   AuditLogEventType,
   AuditLogResourceType,
-  AuditSeverityLevel
+  AuditSeverityLevel,
+  UserStatus
 } from '@prisma/client';
 import { AUTH_ERRORS } from '../errors';
-import { createAuthMiddleware } from 'better-auth/api';
-import { ROUTES } from '../config/routes';
-import { handleAuthError } from '../errors';
-import { getRequestInfo } from '../utils/request';
-import { AUTH_CONFIG } from '../config/better-auth';
 import { logAuthError } from '../utils/error-logging';
 import type {
   HookBeforeHandler,
   HookAfterHandler,
-  HookEndpointContext,
-  AuthContext
+  HookEndpointContext
 } from 'better-auth';
+import { ROUTES } from '../config/routes';
+import { AUTH_CONFIG } from '../config/better-auth';
+import { handleAuthError } from '../errors';
+import { createServiceAuditLog } from './audit-service';
+import { checkPermission, Operation } from '../utils/permissions';
+import { safeTransaction } from '@/lib/db/index';
+import { createDatabaseError } from '@/lib/db/index';
 
-export const recordLoginAttempt = async (
-  userId: string,
-  success: boolean,
-  request?: Request
-) => {
-  let user;
-  try {
-    user = await prisma.platformUser.findUnique({
-      where: { id: userId }
-    });
+interface AuthRequestBody {
+  email?: string;
+  [key: string]: unknown;
+}
 
-    if (!user) {
-      throw AUTH_ERRORS.USER_NOT_FOUND({
-        context: 'recordLoginAttempt',
-        userId
-      });
-    }
+interface LoginAttemptData {
+  userId: string;
+  success: boolean;
+  request?: Request;
+}
 
-    if (success) {
-      await prisma.$transaction(async (tx) => {
-        await tx.platformUser.update({
-          where: { id: userId },
-          data: {
-            failedLoginAttempts: 0,
-            lastLoginAt: new Date(),
-            lockoutUntil: null
-          }
+const isUserLocked = (user: { lockoutUntil: Date | null } | null): boolean => {
+  if (!user?.lockoutUntil) return false;
+  return new Date(user.lockoutUntil) > new Date();
+};
+
+const hasExceededLoginAttempts = (
+  user: { failedLoginAttempts: number | null } | null
+): boolean => {
+  return (
+    (user?.failedLoginAttempts ?? 0) >= AUTH_CONFIG.SECURITY.MAX_LOGIN_ATTEMPTS
+  );
+};
+
+export const recordLoginAttempt = async (data: LoginAttemptData) => {
+  const db = await getProtectedDb();
+  return safeTransaction(db, async (tx) => {
+    try {
+      // Check if user can be accessed
+      const canAccess = await checkPermission(data.userId, Operation.Read);
+
+      if (!canAccess) {
+        throw AUTH_ERRORS.UNAUTHORIZED({
+          message: 'Cannot access user',
+          context: 'recordLoginAttempt',
+          metadata: { userId: data.userId }
         });
+      }
 
-        await createAuditLog(
-          {
-            userId,
-            eventType: AuditLogEventType.LOGIN_SUCCESS,
-            description: 'Successful login',
-            resourceType: AuditLogResourceType.USER,
-            resourceId: userId,
-            tableName: 'platformUser',
-            severity: AuditSeverityLevel.INFO,
-            ...getRequestInfo(request)
-          },
-          tx
-        );
-      });
-      return;
-    }
-
-    const failedAttempts = (user?.failedLoginAttempts ?? 0) + 1;
-    const shouldLock =
-      failedAttempts >= AUTH_CONFIG.SECURITY.MAX_LOGIN_ATTEMPTS;
-    const lockoutUntil = new Date(
-      Date.now() + AUTH_CONFIG.SECURITY.LOCKOUT_DURATION
-    );
-
-    await prisma.$transaction(async (tx) => {
-      await tx.platformUser.update({
-        where: { id: userId },
-        data: {
-          failedLoginAttempts: failedAttempts,
-          lastFailedLoginAt: new Date(),
-          lockoutUntil: shouldLock ? lockoutUntil : null
+      // Get user details
+      const user = await tx.user.findUnique({
+        where: { id: data.userId },
+        select: {
+          id: true,
+          email: true,
+          failedLoginAttempts: true,
+          status: true
         }
       });
 
-      await createAuditLog(
+      if (!user) {
+        throw AUTH_ERRORS.USER_NOT_FOUND({
+          context: 'recordLoginAttempt',
+          userId: data.userId
+        });
+      }
+
+      // Update auth session
+      await tx.authSession.updateMany({
+        where: {
+          userId: data.userId,
+          isRevoked: false
+        },
+        data: {
+          lastActiveAt: new Date(),
+          failedAttempts: data.success ? 0 : { increment: 1 }
+        }
+      });
+
+      await createServiceAuditLog(
+        {
+          userId: data.userId,
+          eventType: data.success
+            ? AuditLogEventType.LOGIN_SUCCESS
+            : AuditLogEventType.LOGIN_FAILURE,
+          description: data.success
+            ? 'Successful login'
+            : 'Failed login attempt',
+          resourceType: AuditLogResourceType.SECURITY_EVENT,
+          resourceId: data.userId,
+          severity: data.success
+            ? AuditSeverityLevel.INFO
+            : AuditSeverityLevel.WARNING,
+          request: data.request
+        },
+        tx
+      );
+    } catch (error) {
+      throw createDatabaseError(error);
+    }
+  });
+};
+
+export const onBeforeAuth: HookBeforeHandler = async (
+  ctx: HookEndpointContext
+) => {
+  const db = await getProtectedDb();
+  await transaction(db, async (tx) => {
+    const body = ctx.body as AuthRequestBody;
+    const email = body?.email;
+    let user;
+
+    try {
+      if (ctx.path === ROUTES.SIGN_IN.EMAIL && email) {
+        user = await tx.user.findUnique({
+          where: { email },
+          select: {
+            id: true,
+            failedLoginAttempts: true,
+            lockoutUntil: true
+          }
+        });
+
+        if (isUserLocked(user)) {
+          throw AUTH_ERRORS.ACCOUNT_LOCKED({
+            context: 'onBeforeAuth',
+            userId: user?.id,
+            lockoutUntil: user?.lockoutUntil
+          });
+        }
+
+        if (hasExceededLoginAttempts(user)) {
+          await tx.user.update({
+            where: { id: user!.id },
+            data: {
+              failedLoginAttempts: 0,
+              lockoutUntil: null
+            }
+          });
+        }
+      }
+    } catch (error) {
+      await logAuthError(error, {
+        userId: user?.id ?? email ?? 'unknown',
+        context: 'security',
+        action: 'onBeforeAuth',
+        request: ctx.request,
+        metadata: { path: ctx.path, email }
+      });
+      throw createDatabaseError(error);
+    }
+  });
+};
+
+export const onAfterAuth: HookAfterHandler = async (
+  ctx: HookEndpointContext
+) => {
+  const userId = ctx.context?.session?.user?.id;
+  if (ctx.path.startsWith(ROUTES.SIGN_IN.BASE) && userId) {
+    const db = await getProtectedDb();
+    await transaction(db, async (tx) => {
+      await createServiceAuditLog(
         {
           userId,
-          eventType: shouldLock
-            ? AuditLogEventType.ACCOUNT_LOCKED
-            : AuditLogEventType.LOGIN_FAILURE,
-          description: shouldLock
-            ? 'Account locked due to too many failed attempts'
-            : 'Failed login attempt',
-          resourceType: AuditLogResourceType.USER,
+          eventType: AuditLogEventType.LOGIN_SUCCESS,
+          description: 'Successful login',
+          resourceType: AuditLogResourceType.SECURITY_EVENT,
           resourceId: userId,
-          tableName: 'platformUser',
-          severity: AuditSeverityLevel.WARNING,
-          ...getRequestInfo(request)
+          severity: AuditSeverityLevel.INFO,
+          request: ctx.request
         },
         tx
       );
     });
-
-    if (shouldLock) {
-      throw AUTH_ERRORS.ACCOUNT_LOCKED({
-        context: 'recordLoginAttempt',
-        failedAttempts,
-        lockoutUntil
-      });
-    }
-  } catch (error) {
-    await logAuthError(error, {
-      userId,
-      context: 'security',
-      action: 'recordLoginAttempt',
-      request,
-      metadata: {
-        success,
-        failedAttempts: user?.failedLoginAttempts ?? 0
-      }
-    });
-    throw handleAuthError(error);
   }
 };
 
-export const onBeforeAuth: HookBeforeHandler = async (
-  ctx: HookEndpointContext<AuthContext>
+export const onAuthError: HookBeforeHandler = async (
+  ctx: HookEndpointContext
 ) => {
-  let user;
-  try {
-    // Email domain check
-    const email = ctx.body?.email;
-    if (ctx.path === ROUTES.SIGN_UP.EMAIL && email) {
-      if (!email.endsWith('@example.com')) {
-        throw AUTH_ERRORS.BAD_REQUEST('Email must end with @example.com', {
-          context: 'onBeforeAuth',
-          email
+  const db = await getProtectedDb();
+  return transaction(db, async (tx) => {
+    let user;
+    let body: AuthRequestBody = {};
+
+    try {
+      body = ctx.body as AuthRequestBody;
+      if (ctx.path.startsWith(ROUTES.SIGN_IN.BASE) && body?.email) {
+        user = await tx.user.findUnique({
+          where: { email: body.email },
+          select: {
+            id: true,
+            email: true,
+            status: true,
+            failedLoginAttempts: true
+          }
         });
-      }
-    }
 
-    // Login attempt check
-    if (ctx.path === ROUTES.SIGN_IN.EMAIL && email) {
-      user = await prisma.platformUser.findUnique({
-        where: { emailAddress: email },
-        select: {
-          id: true,
-          failedLoginAttempts: true,
-          lockoutUntil: true
-        }
-      });
-
-      if (
-        user &&
-        user.failedLoginAttempts >= AUTH_CONFIG.SECURITY.MAX_LOGIN_ATTEMPTS
-      ) {
-        if (user.lockoutUntil && user.lockoutUntil > new Date()) {
-          throw AUTH_ERRORS.ACCOUNT_LOCKED({
-            context: 'onBeforeAuth',
+        if (user) {
+          await recordLoginAttempt({
             userId: user.id,
-            lockoutUntil: user.lockoutUntil
+            success: false,
+            request: ctx.request
           });
         }
-        await prisma.platformUser.update({
-          where: { id: user.id },
-          data: { failedLoginAttempts: 0, lockoutUntil: null }
-        });
       }
+    } catch (error) {
+      await logAuthError(error, {
+        userId: user?.id ?? body?.email ?? 'unknown',
+        context: 'security',
+        action: 'onAuthError',
+        request: ctx.request,
+        metadata: {
+          path: ctx.path,
+          email: body?.email
+        }
+      });
+      throw handleAuthError(error);
     }
-  } catch (error) {
-    await logAuthError(error, {
-      userId: user?.id ?? ctx.body?.email,
-      context: 'security',
-      action: 'onBeforeAuth',
-      request: ctx.request,
-      metadata: {
-        path: ctx.path,
-        email: ctx.body?.email
-      }
-    });
-    throw handleAuthError(error);
-  }
+  });
 };
-
-export const onAfterAuth: HookAfterHandler = async (
-  ctx: HookEndpointContext<AuthContext>
-) => {
-  const userId = ctx.context?.session?.user?.id;
-  if (ctx.path.startsWith(ROUTES.SIGN_IN.BASE) && userId) {
-    await recordLoginAttempt(userId, true, ctx.request);
-  }
-};
-
-// // This middleware specifically handles auth errors
-// export const onAuthError: HookErrorHandler = async (ctx: HookEndpointContext<AuthContext>) => {
-//   let user;
-//   try {
-//     if (ctx.path.startsWith(ROUTES.SIGN_IN.BASE) && ctx.body?.email) {
-//       user = await prisma.platformUser.findUnique({
-//         where: { emailAddress: ctx.body.email }
-//       });
-//       if (user) {
-//         await recordLoginAttempt(user.id, false, ctx.request);
-//       }
-//     }
-//   } catch (error) {
-//     await logAuthError(error, {
-//       userId: user?.id || ctx.body?.email,
-//       context: 'security',
-//       action: 'onAuthError',
-//       request: ctx.request,
-//       metadata: {
-//         path: ctx.path,
-//         email: ctx.body?.email
-//       }
-//     });
-//     throw handleAuthError(error);
-//   }
-// };

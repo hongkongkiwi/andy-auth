@@ -20,10 +20,23 @@
     ],
     "paths": {
       "@/*": ["./*"],
-      "lib/*": ["lib/*"]
+      "@/lib/*": ["lib/*"],
+      "@/components/*": ["components/*"],
+      "@/hooks/*": ["hooks/*"],
+      "@/utils/*": ["utils/*"],
+      "@/types/*": ["types/*"],
+      "@/styles/*": ["styles/*"],
+      "@/config/*": ["config/*"]
     },
     "baseUrl": "."
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "prisma/generated/zod",
+    "prisma/generated/types"
+  ],
   "exclude": ["node_modules"]
 }

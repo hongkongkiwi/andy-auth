@@ -1,5 +1,6 @@
 import { EntityStatus } from '@prisma/client';
 import { APIError } from 'better-auth/api';
+import { createErrorFactory } from '@/lib/errors';
 
 /**
  * HTTP Status codes used in authentication responses
@@ -120,6 +121,13 @@ export const AUTH_ERRORS = {
   ACCOUNT_SUSPENDED: (metadata?: AuthErrorMetadata) =>
     createAuthError(StatusCode.FORBIDDEN, 'Account is suspended', metadata),
 
+  ACCOUNT_DELETE_BLOCKED: (metadata?: AuthErrorMetadata) =>
+    createAuthError(
+      StatusCode.FORBIDDEN,
+      'Account deletion is blocked',
+      metadata
+    ),
+
   // Session Errors
   SESSION_REQUIRED: (metadata?: AuthErrorMetadata) =>
     createAuthError(
@@ -175,6 +183,13 @@ export const AUTH_ERRORS = {
     ),
 
   INVALID_CODE: (metadata?: AuthErrorMetadata) =>
+    createAuthError(
+      StatusCode.BAD_REQUEST,
+      'Invalid verification code',
+      metadata
+    ),
+
+  INVALID_VERIFICATION_CODE: (metadata?: AuthErrorMetadata) =>
     createAuthError(
       StatusCode.BAD_REQUEST,
       'Invalid verification code',
@@ -333,7 +348,21 @@ export const AUTH_ERRORS = {
       resourceId,
       resourceType,
       status
-    })
+    }),
+
+  UNAUTHORIZED: (metadata?: AuthErrorMetadata) =>
+    createAuthError(StatusCode.UNAUTHORIZED, 'Unauthorized access', metadata),
+
+  VERIFICATION_FAILED: (metadata?: AuthErrorMetadata) =>
+    createAuthError(StatusCode.BAD_REQUEST, 'Verification failed', metadata),
+
+  // Phone Number Errors
+  INVALID_PHONE_NUMBER: (metadata?: AuthErrorMetadata) =>
+    createAuthError(
+      StatusCode.BAD_REQUEST,
+      'Invalid phone number format',
+      metadata
+    )
 } as const;
 
 /**
@@ -420,3 +449,10 @@ const statusCodeToString = (code: StatusCode): APIError['status'] => {
       return 'INTERNAL_SERVER_ERROR';
   }
 };
+
+export const WORKSPACE_ERRORS = {
+  UNAUTHORIZED: createErrorFactory('WORKSPACE.UNAUTHORIZED'),
+  NOT_FOUND: createErrorFactory('WORKSPACE.NOT_FOUND'),
+  INVALID_STATUS: createErrorFactory('WORKSPACE.INVALID_STATUS'),
+  ALREADY_EXISTS: createErrorFactory('WORKSPACE.ALREADY_EXISTS')
+} as const;

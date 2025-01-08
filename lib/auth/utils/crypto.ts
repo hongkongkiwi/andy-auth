@@ -1,54 +1,68 @@
+import { randomBytes } from 'crypto';
 import { hashSync, compareSync } from 'bcrypt-mini';
-import { AUTH_ERRORS, handleAuthError } from '../errors';
-import { createHash } from 'crypto';
+import { createId } from '@paralleldrive/cuid2';
+import { AUTH_CONFIG } from '../config/better-auth';
 
-const SALT_ROUNDS = 12;
+/**
+ * Generate a secure random token
+ * @param bytes Number of bytes for token (default: 32)
+ * @returns Hex string token
+ */
+export const generateToken = (bytes: number = 32): string => {
+  return randomBytes(bytes).toString('hex');
+};
 
+/**
+ * Hash a password using bcrypt
+ * @param password - Plain text password to hash
+ * @returns Promise containing the hashed password
+ */
 export const hashPassword = async (password: string): Promise<string> => {
-  try {
-    return Promise.resolve(hashSync(password, SALT_ROUNDS));
-  } catch (error) {
-    throw AUTH_ERRORS.INTERNAL_ERROR({
-      context: 'hashPassword',
-      error
-    });
-  }
-};
-
-export const verifyPassword = async (data: {
-  hash: string;
-  password: string;
-}): Promise<boolean> => {
-  try {
-    return Promise.resolve(compareSync(data.password, data.hash));
-  } catch (error) {
-    throw AUTH_ERRORS.INVALID_CREDENTIALS({
-      context: 'verifyPassword',
-      error
-    });
-  }
-};
-
-export const generateToken = (length = 32): string => {
-  return Array.from({ length }, () =>
-    Math.floor(Math.random() * 16).toString(16)
-  ).join('');
-};
-
-export const generateMFASecret = (): string => {
-  return Array.from({ length: 40 }, () =>
-    Math.floor(Math.random() * 16).toString(16)
-  ).join('');
-};
-
-export const generateBackupCodes = (count = 10): string[] => {
-  return Array.from({ length: count }, () =>
-    Array.from({ length: 8 }, () => Math.floor(Math.random() * 16).toString(16))
-      .join('')
-      .toUpperCase()
+  return Promise.resolve(
+    hashSync(password, AUTH_CONFIG.SECURITY.BCRYPT_SALT_ROUNDS)
   );
 };
 
-export const hashToken = (code: string): string => {
-  return createHash('sha256').update(code).digest('hex');
+/**
+ * Verify a password against a hash
+ * @param password - Plain text password to verify
+ * @param hash - Hash to verify against
+ * @returns Promise<boolean> indicating if password matches
+ */
+export const verifyPassword = async (
+  password: string,
+  hash: string
+): Promise<boolean> => {
+  return Promise.resolve(compareSync(password, hash));
+};
+
+/**
+ * Generate a verification code
+ * @param length Length of code (default: 6)
+ * @returns Numeric verification code string
+ */
+export const generateVerificationCode = (
+  length: number = AUTH_CONFIG.SECURITY.VERIFICATION_CODE_LENGTH
+): string => {
+  const min = Math.pow(10, length - 1);
+  const max = Math.pow(10, length) - 1;
+  return Math.floor(Math.random() * (max - min + 1) + min).toString();
+};
+
+/**
+ * Generate a secure session token
+ * @returns Session token string
+ */
+export const generateSessionToken = (): string => {
+  return `${createId()}.${generateToken(32)}`;
+};
+
+/**
+ * Verify a password for auth purposes (used by better-auth)
+ */
+export const verifyPasswordForAuth = async (data: {
+  password: string;
+  hash: string;
+}): Promise<boolean> => {
+  return verifyPassword(data.password, data.hash);
 };

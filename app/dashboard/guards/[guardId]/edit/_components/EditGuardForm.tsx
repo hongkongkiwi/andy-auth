@@ -8,6 +8,10 @@ import { Button } from '@/components/ui/button';
 import { db } from '@/constants/mock-api/db';
 import { useWorkspace } from '@/components/layout/WorkspaceSwitcher';
 import type { Guard } from '@/constants/mock-api/types';
+import {
+  GuardCreateSchema,
+  GuardUpdateSchema
+} from '@zenstackhq/runtime/zod/model';
 
 const EditGuardForm = ({ guardId }: { guardId: string }) => {
   const router = useRouter();

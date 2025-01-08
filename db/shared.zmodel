@@ -97,8 +97,14 @@ abstract model Auditable {
   updatedAt DateTime @updatedAt
   createdBy String?
   updatedBy String?
+}
+
+abstract model SoftDelete {
   deletedAt DateTime?
   deletedBy String?
+}
+
+abstract model Versionable {
   version Int @default(1)
   changeHistory Json?
 }

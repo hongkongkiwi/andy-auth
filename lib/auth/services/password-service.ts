@@ -1,4 +1,5 @@
-import { prisma } from '@/lib/db';
+import { transaction } from '@/lib/db/index';
+import type { TransactionClient } from '@/lib/db/types';
 import { sendEmail, EmailTemplate } from '@/lib/email/send-email';
 import { createAuditLog } from './audit-service';
 import {
@@ -12,8 +13,9 @@ import { AUTH_ERRORS } from '../errors';
 import type { User } from 'better-auth/types';
 import { handleAuthError } from '../errors';
 import { AUTH_CONFIG } from '../config/better-auth';
-import type { AuthUser } from '../types';
+import type { AuthUser } from '../types/types';
 import prettyMs from 'pretty-ms';
+import { getProtectedDb } from '@/lib/db/index';
 
 interface PasswordResetData {
   user: AuthUser;
@@ -21,12 +23,6 @@ interface PasswordResetData {
   token: string;
 }
 
-/**
- * Hashes a user password with proper validation
- * @param password - The plain text password to hash
- * @returns Promise containing the hashed password string
- * @throws {APIError} If password format is invalid or hashing fails
- */
 export const hashUserPassword = async (password: string): Promise<string> => {
   try {
     if (!validatePassword(password)) {
@@ -40,42 +36,107 @@ export const hashUserPassword = async (password: string): Promise<string> => {
   }
 };
 
-/**
- * Verifies a user's password against stored hash
- * @param password - The plain text password to verify
- * @param hash - The stored password hash
- * @param salt - The stored password salt
- * @returns Promise<boolean> indicating if password is valid
- * @throws {APIError} If verification fails
- */
 export const verifyUserPassword = async (
   password: string,
   hash: string
 ): Promise<boolean> => {
   try {
-    return await verifyPassword({ password, hash });
+    return await verifyPassword(password, hash);
   } catch (error) {
     throw handleAuthError(error);
   }
 };
 
-/**
- * Sends a password reset email to the user
- * @param data - Object containing user info, reset URL and token
- * @param request - Optional Request object for logging
- * @throws {APIError} If user not found or email sending fails
- */
+export const changePassword = async (
+  userId: string,
+  oldPassword: string,
+  newPassword: string,
+  request?: Request
+) => {
+  const db = await getProtectedDb();
+  return transaction(db, async (tx) => {
+    const user = await tx.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        password: true,
+        email: true,
+        userProfile: true,
+        status: true
+      }
+    });
+
+    if (!user?.password) {
+      throw AUTH_ERRORS.USER_NOT_FOUND({
+        context: 'changePassword',
+        userId
+      });
+    }
+
+    const isValid = await verifyUserPassword(oldPassword, user.password);
+    if (!isValid) {
+      throw AUTH_ERRORS.INVALID_CREDENTIALS({
+        context: 'changePassword'
+      });
+    }
+
+    const hash = await hashUserPassword(newPassword);
+
+    await tx.user.update({
+      where: { id: userId },
+      data: {
+        password: hash,
+        passwordLastChanged: new Date(),
+        requirePasswordChange: false,
+        passwordResetAttempts: 0
+      }
+    });
+
+    await createAuditLog(
+      {
+        userId,
+        eventType: AuditLogEventType.PASSWORD_CHANGED,
+        description: 'User changed their password',
+        resourceType: AuditLogResourceType.USER,
+        resourceId: userId,
+        tableName: 'user',
+        severity: AuditSeverityLevel.INFO,
+        metadata: {
+          requestPath: request?.url,
+          requestMethod: request?.method
+        }
+      },
+      tx
+    );
+
+    if (user.email) {
+      await sendEmail({
+        to: user.email,
+        template: EmailTemplate.PASSWORD_CHANGED,
+        data: {
+          name: user.userProfile?.firstName || 'User'
+        }
+      });
+    }
+  });
+};
+
 export const sendResetPassword = async (
   data: PasswordResetData,
   request?: Request
 ) => {
-  try {
-    const platformUser = await prisma.platformUser.findUnique({
+  const db = await getProtectedDb();
+  return transaction(db, async (tx) => {
+    const user = await tx.user.findUnique({
       where: { id: data.user.id },
-      include: { personProfile: true }
+      select: {
+        id: true,
+        email: true,
+        userProfile: true
+      }
     });
 
-    if (!platformUser) {
+    if (!user) {
       throw AUTH_ERRORS.USER_NOT_FOUND({
         context: 'sendResetPassword',
         userId: data.user.id
@@ -83,134 +144,51 @@ export const sendResetPassword = async (
     }
 
     await sendEmail({
-      to: platformUser.emailAddress!,
+      to: user.email!,
       template: EmailTemplate.PASSWORD_RESET,
       data: {
-        name: platformUser.personProfile?.firstName || 'User',
+        name: user.userProfile?.firstName || 'User',
         resetUrl: `${data.url}?token=${data.token}`,
         expiresIn: prettyMs(AUTH_CONFIG.EXPIRATION.PASSWORD_RESET, {
           verbose: true
         })
       }
     });
-  } catch (error) {
-    throw handleAuthError(error);
-  }
-};
 
-/**
- * Changes a user's password with current password verification
- * @param userId - ID of user changing password
- * @param currentPassword - Current password for verification
- * @param newPassword - New password to set
- * @param request - Optional Request object for audit logging
- * @throws {APIError} If user not found, current password invalid, or new password format invalid
- */
-export const changePassword = async (
-  userId: string,
-  currentPassword: string,
-  newPassword: string,
-  request?: Request
-) => {
-  try {
-    const user = await prisma.platformUser.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        passwordHash: true,
-        emailAddress: true,
-        personProfile: true
-      }
-    });
-
-    if (!user?.passwordHash) {
-      throw AUTH_ERRORS.USER_NOT_FOUND({
-        context: 'changePassword',
-        userId
-      });
-    }
-
-    const isValid = await verifyUserPassword(
-      currentPassword,
-      user.passwordHash
+    await createAuditLog(
+      {
+        userId: user.id,
+        eventType: AuditLogEventType.PASSWORD_RESET_REQUESTED,
+        description: 'Password reset email sent',
+        resourceType: AuditLogResourceType.USER,
+        resourceId: user.id,
+        tableName: 'user',
+        severity: AuditSeverityLevel.WARNING,
+        metadata: {
+          requestPath: request?.url,
+          requestMethod: request?.method
+        }
+      },
+      tx
     );
-    if (!isValid) {
-      throw AUTH_ERRORS.INVALID_CREDENTIALS({
-        context: 'changePassword'
-      });
-    }
-
-    if (!validatePassword(newPassword)) {
-      throw AUTH_ERRORS.INVALID_PASSWORD_FORMAT({
-        context: 'changePassword'
-      });
-    }
-
-    const hash = await hashUserPassword(newPassword);
-
-    await prisma.$transaction(async (tx) => {
-      await tx.platformUser.update({
-        where: { id: userId },
-        data: {
-          passwordHash: hash,
-          passwordLastChanged: new Date(),
-          requirePasswordChange: false,
-          passwordResetAttempts: 0
-        }
-      });
-
-      await createAuditLog(
-        {
-          userId,
-          eventType: AuditLogEventType.PASSWORD_CHANGED,
-          description: 'User changed their password',
-          resourceId: userId,
-          resourceType: AuditLogResourceType.USER,
-          tableName: 'platformUser',
-          severity: AuditSeverityLevel.INFO,
-          metadata: {
-            requestPath: request?.url,
-            requestMethod: request?.method
-          }
-        },
-        tx
-      );
-    });
-
-    if (user.emailAddress) {
-      await sendEmail({
-        to: user.emailAddress,
-        subject: 'Password Changed Successfully',
-        template: EmailTemplate.PASSWORD_CHANGED,
-        data: {
-          name: user.personProfile?.firstName || 'User'
-        }
-      });
-    }
-  } catch (error) {
-    throw handleAuthError(error);
-  }
+  });
 };
 
-/**
- * Resets a user's password without requiring current password verification
- * @param userId - ID of user to reset password for
- * @param newPassword - New password to set
- * @param request - Optional Request object for audit logging
- * @throws {AuthError} If user not found or new password invalid
- */
 export const resetPassword = async (
   userId: string,
+  token: string,
   newPassword: string,
   request?: Request
 ) => {
-  try {
-    const user = await prisma.platformUser.findUnique({
+  const db = await getProtectedDb();
+  return transaction(db, async (tx) => {
+    const user = await tx.user.findUnique({
       where: { id: userId },
       select: {
         id: true,
-        emailAddress: true,
-        personProfile: true
+        email: true,
+        status: true,
+        userProfile: true
       }
     });
 
@@ -223,67 +201,59 @@ export const resetPassword = async (
 
     const hash = await hashUserPassword(newPassword);
 
-    await prisma.$transaction(async (tx) => {
-      await tx.platformUser.update({
-        where: { id: userId },
-        data: {
-          passwordHash: hash,
-          passwordLastChanged: new Date(),
-          requirePasswordChange: false,
-          failedLoginAttempts: 0,
-          lockoutUntil: null
-        }
-      });
+    await tx.user.update({
+      where: { id: userId },
+      data: {
+        password: hash,
+        passwordLastChanged: new Date(),
+        requirePasswordChange: false,
+        failedLoginAttempts: 0,
+        lockoutUntil: null
+      }
+    });
 
-      await createAuditLog({
+    await createAuditLog(
+      {
         userId,
         eventType: AuditLogEventType.PASSWORD_RESET,
         description: 'Password reset completed via recovery flow',
         resourceId: userId,
         resourceType: AuditLogResourceType.USER,
-        tableName: 'platformUser',
+        tableName: 'user',
         severity: AuditSeverityLevel.INFO,
         metadata: {
           requestPath: request?.url,
           requestMethod: request?.method
         }
-      });
-    });
+      },
+      tx
+    );
 
-    if (user.emailAddress) {
+    if (user.email) {
       await sendEmail({
-        to: user.emailAddress,
-        subject: 'Your Password Has Been Reset',
+        to: user.email,
         template: EmailTemplate.PASSWORD_RESET_COMPLETE,
         data: {
-          name: user.personProfile?.firstName || 'User'
+          name: user.userProfile?.firstName || 'User'
         }
       });
     }
-  } catch (error) {
-    throw handleAuthError(error);
-  }
+  });
 };
 
-/**
- * Marks a user account as requiring password change
- * @param userId - ID of user to require password change
- * @param reason - Reason for requiring password change
- * @param request - Optional Request object for audit logging
- * @throws {AuthError} If user not found
- */
 export const requirePasswordChange = async (
   userId: string,
   reason: string,
   request?: Request
 ) => {
-  try {
-    const user = await prisma.platformUser.findUnique({
+  const db = await getProtectedDb();
+  return transaction(db, async (tx) => {
+    const user = await tx.user.findUnique({
       where: { id: userId },
       select: {
         id: true,
-        emailAddress: true,
-        personProfile: true
+        email: true,
+        userProfile: true
       }
     });
 
@@ -294,41 +264,162 @@ export const requirePasswordChange = async (
       });
     }
 
-    await prisma.$transaction(async (tx) => {
-      await tx.platformUser.update({
-        where: { id: userId },
-        data: {
-          requirePasswordChange: true
-        }
-      });
+    await tx.user.update({
+      where: { id: userId },
+      data: {
+        requirePasswordChange: true
+      }
+    });
 
-      await createAuditLog({
+    await createAuditLog(
+      {
         userId,
         eventType: AuditLogEventType.PASSWORD_CHANGE_REQUIRED,
         description: `Password change required: ${reason}`,
         resourceId: userId,
         resourceType: AuditLogResourceType.USER,
-        tableName: 'platformUser',
+        tableName: 'user',
         severity: AuditSeverityLevel.INFO,
         metadata: {
           requestPath: request?.url,
           requestMethod: request?.method
         }
-      });
-    });
+      },
+      tx
+    );
 
-    if (user.emailAddress) {
+    if (user.email) {
       await sendEmail({
-        to: user.emailAddress,
-        subject: 'Password Change Required',
+        to: user.email,
         template: EmailTemplate.PASSWORD_CHANGE_REQUIRED,
         data: {
-          name: user.personProfile?.firstName || 'User',
+          name: user.userProfile?.firstName || 'User',
           reason
         }
       });
     }
-  } catch (error) {
-    throw handleAuthError(error);
-  }
+  });
+};
+
+export const updatePassword = async (userId: string, password: string) => {
+  const db = await getProtectedDb();
+  return transaction(db, async (tx) => {
+    const user = await tx.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        status: true
+      }
+    });
+
+    if (!user) {
+      throw AUTH_ERRORS.USER_NOT_FOUND({
+        context: 'updatePassword',
+        userId
+      });
+    }
+
+    await tx.user.update({
+      where: { id: userId },
+      data: {
+        password,
+        requirePasswordChange: false
+      }
+    });
+
+    await createAuditLog(
+      {
+        userId,
+        eventType: AuditLogEventType.PASSWORD_CHANGED,
+        description: 'Password updated',
+        resourceId: userId,
+        resourceType: AuditLogResourceType.USER,
+        tableName: 'user',
+        severity: AuditSeverityLevel.INFO
+      },
+      tx
+    );
+  });
+};
+
+export const sendPasswordReset = async (
+  data: PasswordResetData,
+  request?: Request
+) => {
+  const db = await getProtectedDb();
+  return transaction(db, async (tx) => {
+    const user = await tx.user.findUnique({
+      where: { id: data.user.id },
+      select: {
+        id: true,
+        email: true,
+        userProfile: true,
+        passwordResetAttempts: true
+      }
+    });
+
+    if (!user) {
+      throw AUTH_ERRORS.USER_NOT_FOUND({
+        context: 'sendPasswordReset',
+        userId: data.user.id
+      });
+    }
+
+    if (!user.email) {
+      throw AUTH_ERRORS.BAD_REQUEST('User has no email address', {
+        context: 'sendPasswordReset',
+        metadata: { userId: user.id }
+      });
+    }
+
+    // Check reset attempts
+    if (user.passwordResetAttempts >= AUTH_CONFIG.SECURITY.MAX_RESET_ATTEMPTS) {
+      throw AUTH_ERRORS.TOO_MANY_REQUESTS({
+        context: 'sendPasswordReset',
+        metadata: {
+          userId: user.id,
+          attempts: user.passwordResetAttempts
+        }
+      });
+    }
+
+    await tx.user.update({
+      where: { id: user.id },
+      data: {
+        passwordResetAttempts: {
+          increment: 1
+        }
+      }
+    });
+
+    await sendEmail({
+      to: user.email,
+      template: EmailTemplate.PASSWORD_RESET,
+      data: {
+        name: user.userProfile?.firstName || 'User',
+        resetUrl: `${data.url}?token=${data.token}`,
+        expiresIn: prettyMs(AUTH_CONFIG.EXPIRATION.PASSWORD_RESET, {
+          verbose: true
+        })
+      }
+    });
+
+    await createAuditLog(
+      {
+        userId: user.id,
+        eventType: AuditLogEventType.PASSWORD_RESET_REQUESTED,
+        description: 'Password reset requested',
+        resourceType: AuditLogResourceType.USER,
+        resourceId: user.id,
+        tableName: 'user',
+        severity: AuditSeverityLevel.WARNING,
+        metadata: {
+          requestPath: request?.url,
+          requestMethod: request?.method
+        }
+      },
+      tx
+    );
+  });
 };

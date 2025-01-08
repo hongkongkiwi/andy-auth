@@ -1,128 +1,90 @@
 import { useCallback } from 'react';
-import { PermissionType } from '@prisma/client';
+import { useMutation } from '@tanstack/react-query';
 import { useAuth } from '../auth-context';
+import { getProtectedDb } from '@/lib/db';
+import type {
+  PermissionCheck,
+  RoleCheck,
+  PermissionResult
+} from '../types/permissions';
+
+// Define a type for the database model operations
+type ModelOperations = {
+  findFirst: (args: { where: any; select: any }) => Promise<any>;
+};
 
 export const usePermissions = () => {
-  const { session } = useAuth();
-  const userId = session?.user?.id;
+  const { user, isAuthenticated } = useAuth();
 
-  const checkPermission = useCallback(
-    async (type: PermissionType, resourceId?: string) => {
-      if (!userId) return false;
+  const checkPermissionMutation = useMutation<
+    PermissionResult,
+    Error,
+    PermissionCheck
+  >({
+    mutationFn: async (params) => {
+      const db = await getProtectedDb();
 
       try {
-        const response = await fetch('/api/auth/check-permission', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            type,
-            resourceId
-          })
+        await (db[params.model] as any).findFirst({
+          where: params.data || {},
+          select: { id: true }
         });
-
-        if (!response.ok) return false;
-        return true;
+        return { granted: true };
       } catch (error) {
-        console.error('Permission check failed:', error);
-        return false;
+        return {
+          granted: false,
+          reason: error instanceof Error ? error.message : 'Permission denied'
+        };
       }
+    }
+  });
+
+  const checkRoleMutation = useMutation<PermissionResult, Error, RoleCheck>({
+    mutationFn: async (params) => {
+      const db = await getProtectedDb();
+      const member = await db.resourceMember.findFirst({
+        where: {
+          userId: user?.id,
+          OR: [
+            { workspaceId: params.resourceId },
+            { clientId: params.resourceId },
+            { patrolId: params.resourceId }
+          ],
+          role: params.role
+        }
+      });
+      return {
+        granted: !!member,
+        reason: member ? undefined : 'Required role not found'
+      };
+    }
+  });
+
+  const check = useCallback(
+    async (params: PermissionCheck) => {
+      if (!isAuthenticated || !user?.id) {
+        return { granted: false, reason: 'No user authenticated' };
+      }
+      return checkPermissionMutation.mutateAsync(params);
     },
-    [userId]
+    [isAuthenticated, user?.id, checkPermissionMutation]
   );
 
-  // Platform permissions
-  const isPlatformAdmin = useCallback(async () => {
-    return checkPermission(PermissionType.PLATFORM_ADMIN);
-  }, [checkPermission]);
-
-  const isPlatformUser = useCallback(async () => {
-    return checkPermission(PermissionType.PLATFORM_USER);
-  }, [checkPermission]);
-
-  // Workspace permissions
-  const isWorkspaceAdmin = useCallback(
-    async (workspaceId: string) => {
-      return checkPermission(PermissionType.WORKSPACE_ADMIN, workspaceId);
+  const checkRole = useCallback(
+    async (params: RoleCheck) => {
+      if (!isAuthenticated || !user?.id) {
+        return { granted: false, reason: 'No user authenticated' };
+      }
+      return checkRoleMutation.mutateAsync(params);
     },
-    [checkPermission]
-  );
-
-  const isWorkspaceEditor = useCallback(
-    async (workspaceId: string) => {
-      return checkPermission(PermissionType.WORKSPACE_EDITOR, workspaceId);
-    },
-    [checkPermission]
-  );
-
-  const isWorkspaceViewer = useCallback(
-    async (workspaceId: string) => {
-      return checkPermission(PermissionType.WORKSPACE_VIEWER, workspaceId);
-    },
-    [checkPermission]
-  );
-
-  // Client permissions
-  const isClientAdmin = useCallback(
-    async (clientId: string) => {
-      return checkPermission(PermissionType.CLIENT_ADMIN, clientId);
-    },
-    [checkPermission]
-  );
-
-  const isClientEditor = useCallback(
-    async (clientId: string) => {
-      return checkPermission(PermissionType.CLIENT_EDITOR, clientId);
-    },
-    [checkPermission]
-  );
-
-  const isClientViewer = useCallback(
-    async (clientId: string) => {
-      return checkPermission(PermissionType.CLIENT_VIEWER, clientId);
-    },
-    [checkPermission]
-  );
-
-  // Location permissions
-  const isLocationAdmin = useCallback(
-    async (locationId: string) => {
-      return checkPermission(PermissionType.LOCATION_ADMIN, locationId);
-    },
-    [checkPermission]
-  );
-
-  const isLocationEditor = useCallback(
-    async (locationId: string) => {
-      return checkPermission(PermissionType.LOCATION_EDITOR, locationId);
-    },
-    [checkPermission]
-  );
-
-  const isLocationViewer = useCallback(
-    async (locationId: string) => {
-      return checkPermission(PermissionType.LOCATION_VIEWER, locationId);
-    },
-    [checkPermission]
+    [isAuthenticated, user?.id, checkRoleMutation]
   );
 
   return {
-    checkPermission,
-    // Platform
-    isPlatformAdmin,
-    isPlatformUser,
-    // Workspace
-    isWorkspaceAdmin,
-    isWorkspaceEditor,
-    isWorkspaceViewer,
-    // Client
-    isClientAdmin,
-    isClientEditor,
-    isClientViewer,
-    // Location
-    isLocationAdmin,
-    isLocationEditor,
-    isLocationViewer
+    check,
+    checkRole,
+    isChecking:
+      checkPermissionMutation.isPending || checkRoleMutation.isPending,
+    error: checkPermissionMutation.error || checkRoleMutation.error
   };
 };

@@ -171,15 +171,17 @@ enum AuthenticationMethod {
 /// User status options
 enum UserStatus {
   /// User is active and can access the platform
-  ACTIVE    @map("active")
+  ACTIVE               @map("active")
   /// User is inactive and cannot access the platform
-  INACTIVE  @map("inactive")
+  DISABLED             @map("disabled")
   /// User is suspended due to violations
-  SUSPENDED @map("suspended")
+  SUSPENDED            @map("suspended")
   /// User account is pending verification
-  PENDING   @map("pending")
+  PENDING_VERIFICATION @map("pending_verification")
+  /// User account is pending deletion
+  PENDING_DELETION     @map("pending_deletion")
   /// User account has been deleted
-  DELETED   @map("deleted")
+  DELETED              @map("deleted")
 
   @@map("user_status_enum")
   @@schema("auth")
@@ -217,6 +219,17 @@ enum OAuthScope {
   @@schema("auth")
 }
 
+/// Verification token types
+enum VerificationTokenType {
+  EMAIL_VERIFICATION @map("email_verification")
+  PHONE_VERIFICATION @map("phone_verification")
+  PASSWORD_RESET     @map("password_reset")
+  ACCOUNT_DELETION   @map("account_deletion")
+
+  @@map("verification_token_type_enum")
+  @@schema("auth")
+}
+
 enum SeedExecutionStatus {
   RUNNING   @map("running")
   COMPLETED @map("completed")
@@ -228,27 +241,40 @@ enum SeedExecutionStatus {
 
 /// Security event types for audit logging
 enum AuditLogEventType {
-  CREATE                   @map("create")
-  UPDATE                   @map("update")
-  DELETE                   @map("delete")
-  ARCHIVE                  @map("archive")
-  RESTORE                  @map("restore")
-  LOGIN                    @map("login")
-  LOGOUT                   @map("logout")
-  LOGIN_FAILED             @map("login_failed")
-  SESSION_EXPIRED          @map("session_expired")
-  SESSION_REVOKED          @map("session_revoked")
-  ACCOUNT_CREATED          @map("account_created")
-  ACCOUNT_UPDATED          @map("account_updated")
-  ACCOUNT_DELETED          @map("account_deleted")
-  PERMISSION_GRANTED       @map("permission_granted")
-  PERMISSION_REVOKED       @map("permission_revoked")
-  ACCESS_DENIED            @map("access_denied")
-  PASSWORD_CHANGED         @map("password_changed")
-  PASSWORD_RESET           @map("password_reset")
-  PASSWORD_CHANGE_REQUIRED @map("password_change_required")
-  SUSPICIOUS_ACTIVITY      @map("suspicious_activity")
-  ERROR                    @map("error")
+  CREATE                       @map("create")
+  UPDATE                       @map("update")
+  DELETE                       @map("delete")
+  ARCHIVE                      @map("archive")
+  RESTORE                      @map("restore")
+  LOGIN                        @map("login")
+  LOGOUT                       @map("logout")
+  LOGIN_FAILED                 @map("login_failed")
+  SESSION_EXPIRED              @map("session_expired")
+  SESSION_REVOKED              @map("session_revoked")
+  ACCOUNT_CREATED              @map("account_created")
+  ACCOUNT_UPDATED              @map("account_updated")
+  ACCOUNT_DELETED              @map("account_deleted")
+  ACCOUNT_DELETION_REQUESTED   @map("account_deletion_requested")
+  PERMISSION_GRANTED           @map("permission_granted")
+  PERMISSION_REVOKED           @map("permission_revoked")
+  ACCESS_DENIED                @map("access_denied")
+  PASSWORD_CHANGED             @map("password_changed")
+  PASSWORD_RESET               @map("password_reset")
+  PASSWORD_RESET_REQUESTED     @map("password_reset_requested")
+  PASSWORD_CHANGE_REQUIRED     @map("password_change_required")
+  VERIFICATION_TOKEN_CREATED   @map("verification_token_created")
+  VERIFICATION_TOKEN_USED      @map("verification_token_used")
+  VERIFICATION_TOKEN_EXPIRED   @map("verification_token_expired")
+  EMAIL_VERIFICATION_REQUESTED @map("email_verification_requested")
+  EMAIL_UPDATE_REQUESTED       @map("email_update_requested")
+  EMAIL_VERIFIED               @map("email_verified")
+  PHONE_VERIFICATION_REQUESTED @map("phone_verification_requested")
+  PHONE_VERIFIED               @map("phone_verified")
+  LOGIN_SUCCESS                @map("login_success")
+  LOGIN_FAILURE                @map("login_failure")
+  USER_DELETED                 @map("user_deleted")
+  SUSPICIOUS_ACTIVITY          @map("suspicious_activity")
+  ERROR                        @map("error")
 
   @@map("audit_log_event_type_enum")
   @@schema("auth")
@@ -286,41 +312,26 @@ enum AuditSeverityLevel {
   @@schema("auth")
 }
 
-/// Verification token types
-enum VerificationTokenType {
-  EMAIL_VERIFICATION @map("email_verification")
-  PHONE_VERIFICATION @map("phone_verification")
-  PASSWORD_RESET     @map("password_reset")
-  ACCOUNT_DELETION   @map("account_deletion")
-
-  @@map("verification_token_type_enum")
-  @@schema("auth")
-}
-
 /// Links users to resources with role-based access control (RBAC) but also supports additional gradular permissions
 model ResourceMember {
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt()
-  createdBy     String?
-  updatedBy     String?
-  deletedAt     DateTime?
-  deletedBy     String?
-  version       Int          @default(1)
-  changeHistory Json?
-  id            String       @id() @default(cuid(2))
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt()
+  createdBy   String?
+  updatedBy   String?
+  id          String       @id() @default(cuid(2))
   /// The user being granted access
-  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId        String       @map("user_id")
-  workspace     Workspace?   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  workspaceId   String?      @map("workspace_id")
-  client        Client?      @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  clientId      String?      @map("client_id")
-  patrol        Patrol?      @relation(fields: [patrolId], references: [id], onDelete: Cascade)
-  patrolId      String?      @map("patrol_id")
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String       @map("user_id")
+  workspace   Workspace?   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceId String?      @map("workspace_id")
+  client      Client?      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId    String?      @map("client_id")
+  patrol      Patrol?      @relation(fields: [patrolId], references: [id], onDelete: Cascade)
+  patrolId    String?      @map("patrol_id")
   /// The member's base role for this resource
-  role          Role
+  role        Role
   /// Additional granular permissions
-  permissions   Permission[]
+  permissions Permission[]
 
   @@unique([userId, workspaceId])
   @@unique([userId, clientId])
@@ -336,10 +347,6 @@ model ObjectStorageFile {
   updatedAt          DateTime   @updatedAt()
   createdBy          String?
   updatedBy          String?
-  deletedAt          DateTime?
-  deletedBy          String?
-  version            Int        @default(1)
-  changeHistory      Json?
   id                 String     @id() @default(cuid(2))
   objectKey          String     @map("object_key")
   objectBucket       String     @map("object_bucket")
@@ -359,10 +366,6 @@ model Incident {
   updatedAt          DateTime            @updatedAt()
   createdBy          String?
   updatedBy          String?
-  deletedAt          DateTime?
-  deletedBy          String?
-  version            Int                 @default(1)
-  changeHistory      Json?
   id                 String              @id() @default(cuid(2))
   /// Incident title/summary
   title              String
@@ -411,38 +414,34 @@ model Incident {
 
 /// Client organization within a workspace
 model Client {
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt()
-  createdBy     String?
-  updatedBy     String?
-  deletedAt     DateTime?
-  deletedBy     String?
-  version       Int              @default(1)
-  changeHistory Json?
-  id            String           @id() @default(cuid(2))
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt()
+  createdBy   String?
+  updatedBy   String?
+  id          String           @id() @default(cuid(2))
   /// Display name of the client
-  name          String
+  name        String
   /// Optional client description
-  description   String?
+  description String?
   /// URL to client logo image
-  logoUrl       String?          @map("logo_url")
+  logoUrl     String?          @map("logo_url")
   /// Current client status
-  status        EntityStatus     @default(ACTIVE)
+  status      EntityStatus     @default(ACTIVE)
   /// Client configuration settings
-  settings      Json?
+  settings    Json?
   /// Physical address information
-  address       Json?
+  address     Json?
   /// Parent workspace
-  workspace     Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  workspaceId   String           @map("workspace_id")
+  workspace   Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceId String           @map("workspace_id")
   /// Physical patrols
-  patrols       Patrol[]
+  patrols     Patrol[]
   /// Maximum number of patrols allowed
-  maxPatrols    Int?             @map("max_patrols")
+  maxPatrols  Int?             @map("max_patrols")
   /// Incidents
-  incidents     Incident[]
+  incidents   Incident[]
   /// Members with permissions
-  members       ResourceMember[]
+  members     ResourceMember[]
 
   @@unique([workspaceId, name])
   @@index([workspaceId])
@@ -451,36 +450,32 @@ model Client {
 }
 
 model Workspace {
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt()
-  createdBy     String?
-  updatedBy     String?
-  deletedAt     DateTime?
-  deletedBy     String?
-  version       Int              @default(1)
-  changeHistory Json?
-  id            String           @id() @default(cuid(2))
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt()
+  createdBy   String?
+  updatedBy   String?
+  id          String           @id() @default(cuid(2))
   /// Display name of the workspace
-  name          String
+  name        String
   /// URL-friendly unique identifier
-  slug          String           @unique()
+  slug        String           @unique()
   /// URL to workspace logo image
-  logoUrl       String?          @map("logo_url")
+  logoUrl     String?          @map("logo_url")
   /// Optional workspace description
-  description   String?
+  description String?
   /// Current workspace status
-  status        EntityStatus     @default(ACTIVE)
+  status      EntityStatus     @default(ACTIVE)
   /// Workspace configuration settings
-  settings      Json?
+  settings    Json?
   /// Physical address information
-  address       Json?
-  members       ResourceMember[]
+  address     Json?
+  members     ResourceMember[]
   /// Client organizations
-  clients       Client[]
+  clients     Client[]
   /// Workspace features
-  features      String[]
-  owner         User?            @relation("WorkspaceOwner", fields: [ownerId], references: [id])
-  ownerId       String           @map("owner_id")
+  features    String[]
+  owner       User?            @relation("WorkspaceOwner", fields: [ownerId], references: [id])
+  ownerId     String           @map("owner_id")
 
   @@index([slug])
   @@map("workspace")
@@ -493,10 +488,6 @@ model Patrol {
   updatedAt      DateTime         @updatedAt()
   createdBy      String?
   updatedBy      String?
-  deletedAt      DateTime?
-  deletedBy      String?
-  version        Int              @default(1)
-  changeHistory  Json?
   id             String           @id() @default(cuid(2))
   /// Display name of the patrol
   name           String
@@ -522,14 +513,12 @@ model Patrol {
 
 /// Core user model with authentication, profile, and relationship data
 model User {
+  deletedAt             DateTime?
+  deletedBy             String?
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt()
   createdBy             String?
   updatedBy             String?
-  deletedAt             DateTime?
-  deletedBy             String?
-  version               Int                    @default(1)
-  changeHistory         Json?
   id                    String                 @id() @default(cuid(2))
   /// Primary email address for account access and notifications
   email                 String                 @unique()
@@ -549,12 +538,21 @@ model User {
   /// Account status
   status                UserStatus             @default(ACTIVE)
   authenticationMethods AuthenticationMethod[]
+  /// Number of consecutive failed login attempts
+  failedLoginAttempts   Int                    @default(0)
+  /// Timestamp until which the user is locked out
+  lockoutUntil          DateTime?
   /// Platform administrator access flag
   isPlatformAdmin       Boolean                @default(false)
   userProfile           UserProfile?
+  requirePasswordChange Boolean                @default(false)
+  passwordLastChanged   DateTime?
+  passwordResetAttempts Int                    @default(0)
   /// Display name for the user
   name                  String?
   image                 String?
+  /// Verification tokens
+  verificationTokens    VerificationToken[]
   /// Active user sessions
   sessions              AuthSession[]
   /// Workspaces where user is the owner
@@ -575,19 +573,15 @@ model User {
 }
 
 model UserProfile {
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt()
-  createdBy     String?
-  updatedBy     String?
-  deletedAt     DateTime?
-  deletedBy     String?
-  version       Int       @default(1)
-  changeHistory Json?
-  id            String    @id() @default(cuid(2))
-  firstName     String    @map("first_name")
-  lastName      String?   @map("last_name")
-  user          User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId        String?   @unique()
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt()
+  createdBy String?
+  updatedBy String?
+  id        String   @id() @default(cuid(2))
+  firstName String   @map("first_name")
+  lastName  String?  @map("last_name")
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String?  @unique()
 
   @@map("user_profiles")
   @@schema("auth")
@@ -599,10 +593,6 @@ model AuthSession {
   updatedAt      DateTime  @updatedAt()
   createdBy      String?
   updatedBy      String?
-  deletedAt      DateTime?
-  deletedBy      String?
-  version        Int       @default(1)
-  changeHistory  Json?
   id             String    @id() @default(cuid(2))
   /// Unique session identifier
   token          String    @unique()
@@ -646,10 +636,6 @@ model OAuthAccount {
   updatedAt         DateTime  @updatedAt()
   createdBy         String?
   updatedBy         String?
-  deletedAt         DateTime?
-  deletedBy         String?
-  version           Int       @default(1)
-  changeHistory     Json?
   id                String    @id() @default(cuid(2))
   /// OAuth provider type (e.g., 'google', 'github')
   provider          String
@@ -680,23 +666,43 @@ model OAuthAccount {
   @@schema("auth")
 }
 
+/// Verification token for email/phone verification
+model VerificationToken {
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt()
+  createdBy   String?
+  updatedBy   String?
+  id          String                @id() @default(cuid(2))
+  identifier  String
+  token       String                @unique()
+  type        VerificationTokenType
+  expiresAt   DateTime              @map("expires_at")
+  usedAt      DateTime?             @map("used_at")
+  phoneNumber String?               @map("phone_number")
+  code        String?
+  attempts    Int                   @default(0) @map("attempts")
+  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String                @map("user_id")
+
+  @@unique([identifier, token])
+  @@index([userId, phoneNumber, code, type])
+  @@map("verification_tokens")
+  @@schema("auth")
+}
+
 /// Tracks database seed executions for development and testing
 model SeedExecution {
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt()
-  createdBy     String?
-  updatedBy     String?
-  deletedAt     DateTime?
-  deletedBy     String?
-  version       Int                 @default(1)
-  changeHistory Json?
-  id            String              @id() @default(cuid(2))
-  seedName      String              @map("seed_name")
-  executedAt    DateTime            @default(now()) @map("executed_at")
-  completedAt   DateTime?           @map("completed_at")
-  status        SeedExecutionStatus @default(RUNNING)
-  error         String?
-  metadata      Json?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt()
+  createdBy   String?
+  updatedBy   String?
+  id          String              @id() @default(cuid(2))
+  seedName    String              @map("seed_name")
+  executedAt  DateTime            @default(now()) @map("executed_at")
+  completedAt DateTime?           @map("completed_at")
+  status      SeedExecutionStatus @default(RUNNING)
+  error       String?
+  metadata    Json?
 
   @@unique([seedName, executedAt])
   @@index([status])
@@ -707,6 +713,10 @@ model SeedExecution {
 
 /// Audit log for security events
 model AuditLog {
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt()
+  createdBy    String?
+  updatedBy    String?
   id           String               @id() @default(cuid(2))
   eventType    AuditLogEventType    @map("event_type")
   resourceType AuditLogResourceType @map("resource_type")
@@ -721,26 +731,5 @@ model AuditLog {
   @@index([resourceType, resourceId])
   @@index([userId])
   @@map("audit_logs")
-  @@schema("auth")
-}
-
-/// Verification token for email/phone verification
-model VerificationToken {
-  createdAt     DateTime              @default(now())
-  updatedAt     DateTime              @updatedAt()
-  createdBy     String?
-  updatedBy     String?
-  deletedAt     DateTime?
-  deletedBy     String?
-  version       Int                   @default(1)
-  changeHistory Json?
-  id            String                @id() @default(cuid(2))
-  identifier    String
-  token         String                @unique()
-  type          VerificationTokenType
-  expiresAt     DateTime              @map("expires_at")
-
-  @@unique([identifier, token])
-  @@map("verification_tokens")
   @@schema("auth")
 }

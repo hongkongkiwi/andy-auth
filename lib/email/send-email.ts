@@ -8,6 +8,7 @@ export enum EmailTemplate {
   EMAIL_VERIFICATION = 'email-verification',
   CHANGE_EMAIL_VERIFICATION = 'change-email-verification',
   DELETE_ACCOUNT_VERIFICATION = 'delete-account-verification',
+  ACCOUNT_DELETION = 'account-deletion',
   ACCOUNT_DELETED_CONFIRMATION = 'account-deleted-confirmation',
   PASSWORD_CHANGED = 'password-changed',
   PASSWORD_CHANGE_REQUIRED = 'password-change-required'
@@ -54,6 +55,10 @@ export const EMAIL_TEMPLATES: Record<EmailTemplate, EmailTemplateConfig> = {
   [EmailTemplate.DELETE_ACCOUNT_VERIFICATION]: {
     subject: 'Confirm Account Deletion',
     template: 'delete-account-verification'
+  },
+  [EmailTemplate.ACCOUNT_DELETION]: {
+    subject: 'Confirm Account Deletion Request',
+    template: 'account-deletion'
   },
   [EmailTemplate.ACCOUNT_DELETED_CONFIRMATION]: {
     subject: 'Account Deletion Confirmed',

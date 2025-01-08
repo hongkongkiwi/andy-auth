@@ -4,9 +4,10 @@ import "./auth-session.zmodel"
 import "./workspace.zmodel"
 import "./object-storage-file.zmodel"
 import "./oauth-account.zmodel"
+import "./verification-token.zmodel"
 
 /// Core user model with authentication, profile, and relationship data
-model User extends Base, Id, Auditable, SchemaAuth {
+model User extends Base, Id, Auditable, SoftDelete, SchemaAuth {
   // Authentication fields
   /// Primary email address for account access and notifications
   email String @unique
@@ -31,10 +32,20 @@ model User extends Base, Id, Auditable, SchemaAuth {
   
   authenticationMethods AuthenticationMethod[]
 
+  /// Number of consecutive failed login attempts
+  failedLoginAttempts Int @default(0)
+
+  /// Timestamp until which the user is locked out
+  lockoutUntil DateTime?
+
   /// Platform administrator access flag
   isPlatformAdmin Boolean @default(false)
   
   userProfile UserProfile?
+
+  requirePasswordChange Boolean @default(false)
+  passwordLastChanged DateTime?
+  passwordResetAttempts Int @default(0)
 
   // Profile information
   /// Display name for the user
@@ -43,6 +54,8 @@ model User extends Base, Id, Auditable, SchemaAuth {
   image String?
   
   // Relationships
+  /// Verification tokens
+  verificationTokens VerificationToken[]
   /// Active user sessions
   sessions AuthSession[]
   /// Workspaces where user is the owner
@@ -168,6 +181,30 @@ model User extends Base, Id, Auditable, SchemaAuth {
   //   !WORKSPACE_BILLING in permissions) || role in [OWNER, ADMIN],
   //   "Billing permission requires OWNER or ADMIN role"
   // )
+
+  // Allow deletion if:
+  // 1. User is deleting their own account
+  // 2. User is platform admin
+  // 3. User is not the last owner of any active workspace
+  @@allow('delete', (
+    // Can delete if:
+    auth().status == ACTIVE && (
+      // 1. User is deleting their own account
+      auth() == this || 
+      // 2. User is platform admin
+      auth().isPlatformAdmin ||
+      // 3. User is not the last owner of any active workspace
+      !(this.memberships?[
+        role == OWNER && 
+        workspace.status == ACTIVE &&
+        // Check if there are no other owners
+        workspace.members?[
+          user.id != this.id &&
+          role == OWNER
+        ]
+      ])
+    )
+  ))
 }
 
 /// Authentication methods supported by the platform
@@ -204,11 +241,13 @@ enum UserStatus {
   /// User is active and can access the platform
   ACTIVE @map("active")
   /// User is inactive and cannot access the platform
-  INACTIVE @map("inactive")
+  DISABLED @map("disabled")
   /// User is suspended due to violations
   SUSPENDED @map("suspended")
   /// User account is pending verification
-  PENDING @map("pending")
+  PENDING_VERIFICATION @map("pending_verification")
+  /// User account is pending deletion
+  PENDING_DELETION @map("pending_deletion")
   /// User account has been deleted
   DELETED @map("deleted")
 

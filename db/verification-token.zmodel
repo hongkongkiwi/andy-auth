@@ -1,4 +1,5 @@
 import "./shared.zmodel"
+import "./user.zmodel"
 
 /// Verification token for email/phone verification
 model VerificationToken extends Base, Id, Auditable, SchemaAuth {
@@ -6,10 +7,24 @@ model VerificationToken extends Base, Id, Auditable, SchemaAuth {
   token String @unique
   type VerificationTokenType
   expiresAt DateTime @map("expires_at")
+  usedAt DateTime? @map("used_at")
+
+  // Optional phone number for phone verification
+  phoneNumber String? @map("phone_number")
+  // Verification code for email/phone
+  code String?
+  // Counter for verification attempts
+  attempts Int @default(0) @map("attempts")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @map("user_id")
 
   @@unique([identifier, token])
+  // Index for efficient phone verification queries
+  @@index([userId, phoneNumber, code, type])
   @@map("verification_tokens")
   
+  // Consider restricting permissions to enhance security
   @@allow('all', true)
 }
 

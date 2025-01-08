@@ -1,4 +1,4 @@
-import { authMiddleware } from './lib/auth/middleware/auth-middleware';
+import { authMiddleware } from './lib/auth/auth-middleware';
 
 // This middleware runs first, then can pass control to permission middleware
 export default authMiddleware;

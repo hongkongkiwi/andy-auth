@@ -27,26 +27,6 @@
       },
       {
         "tableName": "resource_members",
-        "columnName": "deletedAt",
-        "comment": ""
-      },
-      {
-        "tableName": "resource_members",
-        "columnName": "deletedBy",
-        "comment": ""
-      },
-      {
-        "tableName": "resource_members",
-        "columnName": "version",
-        "comment": ""
-      },
-      {
-        "tableName": "resource_members",
-        "columnName": "changeHistory",
-        "comment": ""
-      },
-      {
-        "tableName": "resource_members",
         "columnName": "id",
         "comment": ""
       },
@@ -110,26 +90,6 @@
       },
       {
         "tableName": "object_storage_files",
-        "columnName": "deletedAt",
-        "comment": ""
-      },
-      {
-        "tableName": "object_storage_files",
-        "columnName": "deletedBy",
-        "comment": ""
-      },
-      {
-        "tableName": "object_storage_files",
-        "columnName": "version",
-        "comment": ""
-      },
-      {
-        "tableName": "object_storage_files",
-        "columnName": "changeHistory",
-        "comment": ""
-      },
-      {
-        "tableName": "object_storage_files",
         "columnName": "id",
         "comment": ""
       },
@@ -184,26 +144,6 @@
       {
         "tableName": "incident",
         "columnName": "updatedBy",
-        "comment": ""
-      },
-      {
-        "tableName": "incident",
-        "columnName": "deletedAt",
-        "comment": ""
-      },
-      {
-        "tableName": "incident",
-        "columnName": "deletedBy",
-        "comment": ""
-      },
-      {
-        "tableName": "incident",
-        "columnName": "version",
-        "comment": ""
-      },
-      {
-        "tableName": "incident",
-        "columnName": "changeHistory",
         "comment": ""
       },
       {
@@ -316,26 +256,6 @@
       },
       {
         "tableName": "client",
-        "columnName": "deletedAt",
-        "comment": ""
-      },
-      {
-        "tableName": "client",
-        "columnName": "deletedBy",
-        "comment": ""
-      },
-      {
-        "tableName": "client",
-        "columnName": "version",
-        "comment": ""
-      },
-      {
-        "tableName": "client",
-        "columnName": "changeHistory",
-        "comment": ""
-      },
-      {
-        "tableName": "client",
         "columnName": "id",
         "comment": ""
       },
@@ -405,26 +325,6 @@
       {
         "tableName": "workspace",
         "columnName": "updatedBy",
-        "comment": ""
-      },
-      {
-        "tableName": "workspace",
-        "columnName": "deletedAt",
-        "comment": ""
-      },
-      {
-        "tableName": "workspace",
-        "columnName": "deletedBy",
-        "comment": ""
-      },
-      {
-        "tableName": "workspace",
-        "columnName": "version",
-        "comment": ""
-      },
-      {
-        "tableName": "workspace",
-        "columnName": "changeHistory",
         "comment": ""
       },
       {
@@ -507,26 +407,6 @@
       },
       {
         "tableName": "patrols",
-        "columnName": "deletedAt",
-        "comment": ""
-      },
-      {
-        "tableName": "patrols",
-        "columnName": "deletedBy",
-        "comment": ""
-      },
-      {
-        "tableName": "patrols",
-        "columnName": "version",
-        "comment": ""
-      },
-      {
-        "tableName": "patrols",
-        "columnName": "changeHistory",
-        "comment": ""
-      },
-      {
-        "tableName": "patrols",
         "columnName": "id",
         "comment": ""
       },
@@ -586,26 +466,6 @@
       {
         "tableName": "users",
         "columnName": "updatedBy",
-        "comment": ""
-      },
-      {
-        "tableName": "users",
-        "columnName": "deletedAt",
-        "comment": ""
-      },
-      {
-        "tableName": "users",
-        "columnName": "deletedBy",
-        "comment": ""
-      },
-      {
-        "tableName": "users",
-        "columnName": "version",
-        "comment": ""
-      },
-      {
-        "tableName": "users",
-        "columnName": "changeHistory",
         "comment": ""
       },
       {
@@ -670,6 +530,16 @@
       },
       {
         "tableName": "users",
+        "columnName": "failedLoginAttempts",
+        "comment": "Number of consecutive failed login attempts"
+      },
+      {
+        "tableName": "users",
+        "columnName": "lockoutUntil",
+        "comment": "Timestamp until which the user is locked out"
+      },
+      {
+        "tableName": "users",
         "columnName": "isPlatformAdmin",
         "comment": "Platform administrator access flag"
       },
@@ -718,26 +588,6 @@
       },
       {
         "tableName": "user_profiles",
-        "columnName": "deletedAt",
-        "comment": ""
-      },
-      {
-        "tableName": "user_profiles",
-        "columnName": "deletedBy",
-        "comment": ""
-      },
-      {
-        "tableName": "user_profiles",
-        "columnName": "version",
-        "comment": ""
-      },
-      {
-        "tableName": "user_profiles",
-        "columnName": "changeHistory",
-        "comment": ""
-      },
-      {
-        "tableName": "user_profiles",
         "columnName": "id",
         "comment": ""
       },
@@ -782,26 +632,6 @@
       {
         "tableName": "AuthSession",
         "columnName": "updatedBy",
-        "comment": ""
-      },
-      {
-        "tableName": "AuthSession",
-        "columnName": "deletedAt",
-        "comment": ""
-      },
-      {
-        "tableName": "AuthSession",
-        "columnName": "deletedBy",
-        "comment": ""
-      },
-      {
-        "tableName": "AuthSession",
-        "columnName": "version",
-        "comment": ""
-      },
-      {
-        "tableName": "AuthSession",
-        "columnName": "changeHistory",
         "comment": ""
       },
       {
@@ -909,26 +739,6 @@
       },
       {
         "tableName": "oauth_accounts",
-        "columnName": "deletedAt",
-        "comment": ""
-      },
-      {
-        "tableName": "oauth_accounts",
-        "columnName": "deletedBy",
-        "comment": ""
-      },
-      {
-        "tableName": "oauth_accounts",
-        "columnName": "version",
-        "comment": ""
-      },
-      {
-        "tableName": "oauth_accounts",
-        "columnName": "changeHistory",
-        "comment": ""
-      },
-      {
-        "tableName": "oauth_accounts",
         "columnName": "id",
         "comment": ""
       },
@@ -1012,26 +822,6 @@
       },
       {
         "tableName": "seed_executions",
-        "columnName": "deletedAt",
-        "comment": ""
-      },
-      {
-        "tableName": "seed_executions",
-        "columnName": "deletedBy",
-        "comment": ""
-      },
-      {
-        "tableName": "seed_executions",
-        "columnName": "version",
-        "comment": ""
-      },
-      {
-        "tableName": "seed_executions",
-        "columnName": "changeHistory",
-        "comment": ""
-      },
-      {
-        "tableName": "seed_executions",
         "columnName": "id",
         "comment": ""
       },
@@ -1073,6 +863,26 @@
       "comment": "Audit log for security events"
     },
     "columns": [
+      {
+        "tableName": "audit_logs",
+        "columnName": "createdAt",
+        "comment": ""
+      },
+      {
+        "tableName": "audit_logs",
+        "columnName": "updatedAt",
+        "comment": ""
+      },
+      {
+        "tableName": "audit_logs",
+        "columnName": "createdBy",
+        "comment": ""
+      },
+      {
+        "tableName": "audit_logs",
+        "columnName": "updatedBy",
+        "comment": ""
+      },
       {
         "tableName": "audit_logs",
         "columnName": "id",
@@ -1144,26 +954,6 @@
       {
         "tableName": "verification_tokens",
         "columnName": "updatedBy",
-        "comment": ""
-      },
-      {
-        "tableName": "verification_tokens",
-        "columnName": "deletedAt",
-        "comment": ""
-      },
-      {
-        "tableName": "verification_tokens",
-        "columnName": "deletedBy",
-        "comment": ""
-      },
-      {
-        "tableName": "verification_tokens",
-        "columnName": "version",
-        "comment": ""
-      },
-      {
-        "tableName": "verification_tokens",
-        "columnName": "changeHistory",
         "comment": ""
       },
       {

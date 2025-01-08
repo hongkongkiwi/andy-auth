@@ -1,7 +1,7 @@
 import "./shared.zmodel"
 
 /// Audit log for security events
-model AuditLog extends Base, Id, SchemaAuth {
+model AuditLog extends Base, Id, Auditable, SchemaAuth {
   eventType AuditLogEventType @map("event_type")
   resourceType AuditLogResourceType @map("resource_type")
   resourceId String @map("resource_id")
@@ -38,6 +38,7 @@ enum AuditLogEventType {
   ACCOUNT_CREATED @map("account_created")
   ACCOUNT_UPDATED @map("account_updated")
   ACCOUNT_DELETED @map("account_deleted")
+  ACCOUNT_DELETION_REQUESTED @map("account_deletion_requested")
   
   // Permission Events
   PERMISSION_GRANTED @map("permission_granted")
@@ -47,9 +48,23 @@ enum AuditLogEventType {
   // Password Events
   PASSWORD_CHANGED @map("password_changed")
   PASSWORD_RESET @map("password_reset")
+  PASSWORD_RESET_REQUESTED @map("password_reset_requested")
   PASSWORD_CHANGE_REQUIRED @map("password_change_required")
   
+  // Verification Events
+  VERIFICATION_TOKEN_CREATED @map("verification_token_created")
+  VERIFICATION_TOKEN_USED @map("verification_token_used")
+  VERIFICATION_TOKEN_EXPIRED @map("verification_token_expired")
+  EMAIL_VERIFICATION_REQUESTED @map("email_verification_requested")
+  EMAIL_UPDATE_REQUESTED @map("email_update_requested")
+  EMAIL_VERIFIED @map("email_verified")
+  PHONE_VERIFICATION_REQUESTED @map("phone_verification_requested")
+  PHONE_VERIFIED @map("phone_verified")
+
   // Security Events
+  LOGIN_SUCCESS @map("login_success")
+  LOGIN_FAILURE @map("login_failure")
+  USER_DELETED @map("user_deleted")
   SUSPICIOUS_ACTIVITY @map("suspicious_activity")
   ERROR @map("error")
 

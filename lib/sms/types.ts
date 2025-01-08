@@ -1,4 +1,5 @@
 import { SMSTemplate } from '@/lib/auth/config/sms';
+import type { SMSErrorCode } from './errors';
 
 export interface SMSTemplateData {
   code: string;
@@ -22,11 +23,16 @@ export interface SMSResult {
   status?: 'queued' | 'failed' | 'sent' | 'delivered' | 'undelivered';
   dateCreated?: Date;
   dateUpdated?: Date;
-  errorCode?: number;
+  errorCode?: SMSErrorCode;
+  metadata?: Record<string, unknown> & {
+    attempt?: number;
+    retryAfter?: number | null;
+  };
 }
 
 export interface SendSMSParams {
   to: string;
   template: SMSTemplate;
   data: SMSTemplateData;
+  metadata?: Record<string, unknown>;
 }

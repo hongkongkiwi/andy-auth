@@ -1,47 +1,115 @@
-import { prisma } from '@/lib/db';
 import { sendEmail, EmailTemplate } from '@/lib/email/send-email';
 import { createAuditLog } from './audit-service';
 import {
   AuditLogEventType,
+  AuditLogResourceType,
   AuditSeverityLevel,
   VerificationTokenType,
-  AuditLogResourceType
+  UserStatus
 } from '@prisma/client';
-import type { User } from 'better-auth/types';
-import { AUTH_ERRORS } from '../errors';
-import { handleAuthError } from '../errors';
+import type { User, VerificationToken } from '@prisma/client';
+import { AUTH_ERRORS, handleAuthError } from '../errors';
 import { AUTH_CONFIG } from '../config/better-auth';
 import { logAuthError } from '../utils/error-logging';
-import type { NextRequest } from 'next/server';
 import prettyMs from 'pretty-ms';
+import { generateToken } from '../utils/crypto';
+import { transaction } from '@/lib/db/index';
+import type { TransactionClient } from '@/lib/db/types';
+import { validateEmail } from '../utils/validation';
+import { createServiceAuditLog } from './audit-service';
+import {
+  checkPermission,
+  checkTransactionPermission,
+  Operation
+} from '../utils/permissions';
+import { interactiveTransaction } from '@/lib/db/index';
+import { safeTransaction } from '@/lib/db/index';
+import { getProtectedDb } from '@/lib/db/index';
+import { TransactionCallback } from '@/lib/db/types';
+
+interface VerificationEmailData {
+  user: {
+    id: string;
+    email: string;
+    emailVerified: boolean;
+    name: string;
+    createdAt: Date;
+    updatedAt: Date;
+    image?: string | null;
+  };
+  url: string;
+  token: string;
+}
+
+interface ChangeEmailVerificationData {
+  user: {
+    id: string;
+    email: string;
+    emailVerified: boolean;
+    name: string;
+    createdAt: Date;
+    updatedAt: Date;
+    image?: string | null;
+  };
+  newEmail: string;
+  url: string;
+  token: string;
+}
+
+interface VerificationTokenData {
+  type: VerificationTokenType;
+  email: string;
+  userId: string;
+}
+
+interface UserSelect {
+  id: string;
+  email: string;
+  name: string | null;
+  status: UserStatus;
+}
 
 export const sendVerificationEmail = async (
-  data: {
-    user: User;
-    url: string;
-    token: string;
-  },
+  data: VerificationEmailData,
   request?: Request
 ) => {
-  let platformUser;
-  try {
-    platformUser = await prisma.platformUser.findUnique({
-      where: { id: data.user.id },
-      include: { personProfile: true }
-    });
+  const db = await getProtectedDb();
+  const callback: TransactionCallback<void> = async (tx) => {
+    const canRead = await checkTransactionPermission(
+      data.user.id,
+      Operation.Read,
+      undefined,
+      tx
+    );
 
-    if (!platformUser) {
-      throw AUTH_ERRORS.USER_NOT_FOUND({
+    if (!canRead) {
+      throw AUTH_ERRORS.UNAUTHORIZED({
+        message: 'Cannot verify email',
         context: 'sendVerificationEmail',
-        userId: data.user.id
+        metadata: { userId: data.user.id }
       });
     }
 
+    // Create verification token
+    const verificationToken = await tx.verificationToken.create({
+      data: {
+        userId: data.user.id,
+        identifier: data.user.email!,
+        token: data.token,
+        type: VerificationTokenType.EMAIL_VERIFICATION,
+        expiresAt: new Date(
+          Date.now() + AUTH_CONFIG.EXPIRATION.EMAIL_VERIFICATION
+        ),
+        attempts: 0
+      }
+    });
+
+    // Send email
     await sendEmail({
-      to: platformUser.emailAddress!,
+      to: data.user.email!,
       template: EmailTemplate.EMAIL_VERIFICATION,
       data: {
-        name: platformUser.personProfile?.firstName || 'User',
+        name: data.user.name || 'User',
         verificationUrl: `${data.url}?token=${data.token}`,
         expiresIn: prettyMs(AUTH_CONFIG.EXPIRATION.EMAIL_VERIFICATION, {
           verbose: true
@@ -49,62 +117,99 @@ export const sendVerificationEmail = async (
       }
     });
 
-    await storeVerificationToken({
-      userId: platformUser.id,
-      email: platformUser.emailAddress!,
-      token: data.token,
-      type: VerificationTokenType.EMAIL_LOGIN
-    });
+    await createServiceAuditLog(
+      {
+        userId: data.user.id,
+        eventType: AuditLogEventType.EMAIL_VERIFICATION_REQUESTED,
+        description: 'Email verification requested',
+        resourceType: AuditLogResourceType.VERIFICATION,
+        resourceId: verificationToken.id,
+        severity: AuditSeverityLevel.INFO,
+        metadata: {
+          email: data.user.email,
+          tokenId: verificationToken.id
+        },
+        request
+      },
+      tx
+    );
+  };
+  return interactiveTransaction(db, callback);
+};
 
-    await createAuditLog({
-      userId: platformUser.id,
-      eventType: AuditLogEventType.LOGIN,
-      description: 'Email verification requested',
-      resourceId: platformUser.id,
-      resourceType: AuditLogResourceType.USER,
-      tableName: 'platformUser',
-      severity: AuditSeverityLevel.INFO,
-      metadata: {
-        email: platformUser.emailAddress,
-        verificationSent: true,
+export const createVerificationToken = async (data: VerificationTokenData) => {
+  const db = await getProtectedDb();
+  const callback: TransactionCallback<VerificationToken> = async (tx) => {
+    if (!validateEmail(data.email)) {
+      throw AUTH_ERRORS.BAD_REQUEST('Invalid email format', {
+        context: 'createVerificationToken',
+        email: data.email
+      });
+    }
+
+    const token = await tx.verificationToken.create({
+      data: {
+        userId: data.userId,
+        identifier: data.email,
+        token: generateToken(),
+        type: data.type,
         expiresAt: new Date(
           Date.now() + AUTH_CONFIG.EXPIRATION.EMAIL_VERIFICATION
-        ).toISOString(),
-        requestPath: request?.url,
-        requestMethod: request?.method
+        ),
+        attempts: 0
       }
     });
-  } catch (error) {
-    await logAuthError(error, {
-      userId: data.user.id,
-      context: 'email-verification',
-      action: 'sendVerificationEmail',
-      request,
-      metadata: {
-        email: platformUser?.emailAddress
-      }
-    });
-    throw handleAuthError(error);
-  }
+
+    await createServiceAuditLog(
+      {
+        userId: data.userId,
+        eventType: AuditLogEventType.VERIFICATION_TOKEN_CREATED,
+        description: `Created ${data.type} verification token`,
+        resourceType: AuditLogResourceType.VERIFICATION,
+        resourceId: token.id,
+        severity: AuditSeverityLevel.INFO
+      },
+      tx
+    );
+
+    return token;
+  };
+  return interactiveTransaction(db, callback);
 };
 
 export const sendChangeEmailVerification = async (
-  data: {
-    user: User;
-    newEmail: string;
-    url: string;
-    token: string;
-  },
+  data: ChangeEmailVerificationData,
   request?: Request
 ) => {
-  let platformUser;
-  try {
-    platformUser = await prisma.platformUser.findUnique({
-      where: { id: data.user.id },
-      include: { personProfile: true }
+  const db = await getProtectedDb();
+  const callback: TransactionCallback<void> = async (tx) => {
+    // First check user permissions
+    const canUpdate = await checkPermission(data.user.id, Operation.Update, {
+      email: data.newEmail
     });
 
-    if (!platformUser) {
+    if (!canUpdate) {
+      throw AUTH_ERRORS.UNAUTHORIZED({
+        message: 'Cannot change email',
+        context: 'sendChangeEmailVerification',
+        metadata: {
+          userId: data.user.id,
+          newEmail: data.newEmail
+        }
+      });
+    }
+
+    const user = await tx.user.findUnique({
+      where: { id: data.user.id },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        status: true
+      }
+    });
+
+    if (!user) {
       throw AUTH_ERRORS.USER_NOT_FOUND({
         context: 'sendChangeEmailVerification',
         userId: data.user.id
@@ -115,143 +220,32 @@ export const sendChangeEmailVerification = async (
       to: data.newEmail,
       template: EmailTemplate.CHANGE_EMAIL_VERIFICATION,
       data: {
-        name: platformUser.personProfile?.firstName || 'User',
+        name: user.name || 'User',
         verificationUrl: `${data.url}?token=${data.token}`,
-        currentEmail: platformUser.emailAddress,
-        newEmail: data.newEmail,
         expiresIn: prettyMs(AUTH_CONFIG.EXPIRATION.EMAIL_VERIFICATION, {
           verbose: true
-        })
-      }
-    });
-
-    await createAuditLog({
-      userId: platformUser.id,
-      eventType: AuditLogEventType.LOGIN,
-      description: 'Email change verification requested',
-      resourceId: platformUser.id,
-      resourceType: AuditLogResourceType.USER,
-      tableName: 'platformUser',
-      severity: AuditSeverityLevel.INFO,
-      metadata: {
-        oldEmail: platformUser.emailAddress,
-        newEmail: data.newEmail,
-        expiresAt: new Date(
-          Date.now() + AUTH_CONFIG.EXPIRATION.EMAIL_VERIFICATION
-        ).toISOString(),
-        requestPath: request?.url,
-        requestMethod: request?.method
-      }
-    });
-  } catch (error) {
-    await logAuthError(error, {
-      userId: data.user.id,
-      context: 'email-verification',
-      action: 'sendChangeEmailVerification',
-      request,
-      metadata: {
-        currentEmail: platformUser?.emailAddress,
+        }),
+        currentEmail: user.email,
         newEmail: data.newEmail
       }
     });
-    throw handleAuthError(error);
-  }
-};
 
-export const verifyEmail = async (
-  userId: string,
-  token: string,
-  request?: NextRequest
-) => {
-  try {
-    const verificationToken =
-      await prisma.platformUserVerificationToken.findFirst({
-        where: {
-          userId,
-          value: token,
-          type: VerificationTokenType.EMAIL_LOGIN,
-          expiresAt: { gt: new Date() }
-        }
-      });
-
-    if (verificationToken) {
-      // Update user's email verification status
-      await prisma.platformUser.update({
-        where: { id: userId },
-        data: { emailAddressVerifiedAt: new Date() }
-      });
-
-      // Delete the used token
-      await prisma.platformUserVerificationToken.delete({
-        where: {
-          identifier_value: {
-            identifier: verificationToken.identifier,
-            value: token
-          }
-        }
-      });
-
-      await createAuditLog({
-        userId,
-        eventType: AuditLogEventType.LOGIN,
-        description: 'Email address verified successfully',
-        resourceId: userId,
+    await createServiceAuditLog(
+      {
+        userId: user.id,
+        eventType: AuditLogEventType.EMAIL_UPDATE_REQUESTED,
+        description: 'Email change verification sent',
         resourceType: AuditLogResourceType.USER,
-        tableName: 'platformUser',
+        resourceId: user.id,
         severity: AuditSeverityLevel.INFO,
         metadata: {
-          success: true,
-          requestPath: request?.url,
-          requestMethod: request?.method
-        }
-      });
-
-      return true;
-    } else {
-      await createAuditLog({
-        userId,
-        eventType: AuditLogEventType.LOGIN_FAILED,
-        description: 'Email verification failed - invalid or expired token',
-        resourceId: userId,
-        resourceType: AuditLogResourceType.USER,
-        tableName: 'platformUser',
-        severity: AuditSeverityLevel.WARNING,
-        metadata: {
-          reason: 'INVALID_TOKEN',
-          requestPath: request?.url,
-          requestMethod: request?.method
-        }
-      });
-
-      return false;
-    }
-  } catch (error) {
-    await logAuthError(error, {
-      userId,
-      context: 'email-verification',
-      action: 'verifyEmail',
-      request,
-      metadata: { token }
-    });
-    throw handleAuthError(error);
-  }
-};
-
-const storeVerificationToken = async (data: {
-  userId: string;
-  email: string;
-  token: string;
-  type: VerificationTokenType;
-}) => {
-  return prisma.platformUserVerificationToken.create({
-    data: {
-      identifier: data.email,
-      value: data.token,
-      type: data.type,
-      userId: data.userId,
-      expiresAt: new Date(
-        Date.now() + AUTH_CONFIG.EXPIRATION.EMAIL_VERIFICATION
-      )
-    }
-  });
+          currentEmail: user.email,
+          newEmail: data.newEmail
+        },
+        request
+      },
+      tx
+    );
+  };
+  return interactiveTransaction(db, callback);
 };

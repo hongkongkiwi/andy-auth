@@ -16,7 +16,17 @@ import { Search, ChevronDown, ChevronUp } from 'lucide-react';
 import { useInView } from 'react-intersection-observer';
 import { IncidentFilter } from './IncidentFilter';
 import type { Filter } from './IncidentFilter';
-import { db } from '@/constants/mock-api/db';
+import {
+  getProtectedDb,
+  batchByIds,
+  type BatchResult,
+  type RetryFunction
+} from '@/lib/db';
+import {
+  type Incident,
+  type IncidentReport,
+  type GuardShift
+} from '@prisma/client';
 
 export type FilterType = 'status' | 'priority';
 
@@ -36,6 +46,85 @@ interface Incident {
 type SortField = 'date' | 'status';
 type SortDirection = 'asc' | 'desc';
 
+interface BatchedGuardData {
+  incidents: BatchResult<Incident[]>;
+  reports: BatchResult<IncidentReport[]>;
+  shifts: BatchResult<GuardShift[]>;
+}
+
+const fetchGuardData = async (guardId: string): Promise<BatchedGuardData> => {
+  const db = await getProtectedDb();
+
+  const errorHandling = {
+    onChunkError: (error: Error, chunk: RetryFunction<any>[]) => {
+      console.error('Chunk failed:', { error, size: chunk.length });
+    },
+    onItemError: (error: Error, index: number) => {
+      console.error('Item failed:', { error, index });
+    },
+    throwOnError: false // Continue processing other chunks on error
+  };
+
+  const [incidents, reports, shifts] = await Promise.all([
+    batchByIds(
+      ['open', 'in_progress', 'closed'],
+      (status) =>
+        db.incident.findMany({
+          where: { guardId, status },
+          orderBy: { createdAt: 'desc' }
+        }),
+      {
+        chunkSize: 1, // Process each status separately
+        errorHandling,
+        timeout: 8000 // 8 second timeout per status query
+      }
+    ),
+    batchByIds(
+      ['pending', 'approved', 'rejected'],
+      (status) =>
+        db.incidentReport.findMany({
+          where: { guardId, status }
+        }),
+      {
+        chunkSize: 1,
+        errorHandling,
+        timeout: 8000
+      }
+    ),
+    batchByIds(
+      ['current', 'past'],
+      (type) =>
+        db.guardShift.findMany({
+          where: { guardId },
+          include: { incidents: true },
+          ...(type === 'current'
+            ? {
+                where: { endTime: { gt: new Date() } }
+              }
+            : {
+                take: 10,
+                orderBy: { startTime: 'desc' }
+              })
+        }),
+      {
+        chunkSize: 1,
+        errorHandling,
+        timeout: 8000
+      }
+    )
+  ]);
+
+  // Log any failures
+  [incidents, reports, shifts].forEach((result, i) => {
+    const type = ['incidents', 'reports', 'shifts'][i];
+    if (result.failed.length > 0) {
+      console.error(`Failed ${type}:`, result.failed);
+    }
+  });
+
+  return { incidents, reports, shifts };
+};
+
 const IncidentsTab = ({ guardId }: { guardId: string }) => {
   const [incidents, setIncidents] = React.useState<Incident[]>([]);
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -46,25 +135,31 @@ const IncidentsTab = ({ guardId }: { guardId: string }) => {
   const [selectedIncident, setSelectedIncident] =
     React.useState<Incident | null>(null);
   const { ref, inView } = useInView();
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<Error | null>(null);
 
   React.useEffect(() => {
-    const fetchIncidents = async () => {
+    const loadData = async () => {
       try {
-        const response = await db.incident.findMany({
-          where: {
-            clientId: guardId
-          }
-        });
-        if (response && response.incidents) {
-          setIncidents(response.incidents);
+        setLoading(true);
+        const data = await fetchGuardData(guardId);
+        setIncidents(data.incidents.results.flat());
+        // Handle any partial failures
+        if (data.incidents.failed.length > 0) {
+          console.warn('Some incident data failed to load');
         }
-      } catch (error) {
-        console.error('Failed to fetch incidents:', error);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error('Failed to load data'));
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchIncidents();
+    loadData();
   }, [guardId]);
+
+  if (loading) return <LoadingSkeleton />;
+  if (error) return <div>Error loading incidents: {error.message}</div>;
 
   // Filter and sort incidents
   const filteredIncidents = React.useMemo(() => {

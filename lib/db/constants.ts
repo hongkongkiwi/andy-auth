@@ -1,27 +1,31 @@
-import { Prisma } from '@prisma/client';
-
 /**
- * Database retry configuration constants
- * @property DEFAULT_MAX_RETRIES - Default number of retry attempts
- * @property DEFAULT_DELAY - Default base delay between retries (ms)
- * @property EXTENDED_MAX_RETRIES - Maximum retries for important operations
- * @property EXTENDED_DELAY - Extended delay for important operations (ms)
- * @property RETRY_CODES - Prisma error codes that trigger retries
+ * Database configuration constants
+ * Controls retry behavior and timeouts
  */
-export const DB_RETRY_CONFIG = {
-  DEFAULT_MAX_RETRIES: 3,
-  DEFAULT_DELAY: 1000,
-  EXTENDED_MAX_RETRIES: 5,
-  EXTENDED_DELAY: 2000,
-  RETRY_CODES: {
-    CONNECTION: ['P1000', 'P1001', 'P1002'] as const,
-    DEADLOCK: ['P2034'] as const
+export const DB_CONFIG = {
+  timeout: {
+    transaction: 5000,
+    query: 3000
+  },
+  retry: {
+    maxAttempts: 3,
+    baseDelay: 100,
+    maxDelay: 1000,
+    retryableErrors: {
+      connection: [
+        'P1000', // Authentication failed
+        'P1001', // Cannot reach database server
+        'P1008' // Operations timed out
+      ] as const,
+      transaction: [
+        'P1017', // Server closed the connection
+        'P2024', // Transaction timed out
+        'P2034' // Transaction failed due to conflict
+      ] as const
+    }
   }
 } as const;
 
-// Type definitions for Prisma error codes
-export type PrismaErrorCode = Prisma.PrismaClientKnownRequestError['code'];
-export type PrismaConnectionError = 'P1000' | 'P1001' | 'P1002';
-export type PrismaDeadlockError = 'P2034';
-
-export type DbRetryConfig = typeof DB_RETRY_CONFIG;
+export type RetryableErrorCode =
+  | (typeof DB_CONFIG.retry.retryableErrors.connection)[number]
+  | (typeof DB_CONFIG.retry.retryableErrors.transaction)[number];

@@ -1,7 +1,7 @@
-import type { JsonValue } from './types';
 import { createAuthClient } from 'better-auth/react';
 import { logAuthError } from './utils/error-logging';
 import type { APIError } from 'better-auth';
+import type { JsonValue } from './types/types';
 
 export interface AuthClient {
   id: string;

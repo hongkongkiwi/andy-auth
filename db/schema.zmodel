@@ -60,13 +60,13 @@ plugin trpc {
   version = 'v11'
   importCreateRouter = "../lib/zenstack/trpc"
   importProcedure = "../lib/zenstack/trpc"
-  zodSchemasImport = '../lib/zenstack/zod'
+  zodSchemasImport = '../lib/schemas'
 }
 
 plugin zenstackZod {
   provider = '@core/zod'
   compile = true
-  output   = '../lib/zenstack/zod'
+  output = '../lib/schemas'
 }
 
 plugin zenstackEnhancer {
@@ -103,7 +103,7 @@ generator erdDiagram {
 // plugin zenstackMarkdown {
 //   provider = 'zenstack-markdown'
 //   output = '../prisma/docs/schema.md'
-//   disabled = true
+//   disabled = false
 //   // OPENAI_API_KEY
 //   // ANTHROPIC_API_KEY
 //   // XAI_API_KEY
